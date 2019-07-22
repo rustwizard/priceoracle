@@ -23,6 +23,9 @@ fn main() {
             .about("starts http server")
             .arg(Arg::with_name("bind")
                 .required(true)
+                .takes_value(true)
+                .short("b")
+                .long("bind")
                 .help("address:port"))
         )
         .get_matches();
