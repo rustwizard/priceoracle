@@ -5,8 +5,9 @@ extern crate slog_term;
 
 use slog::Drain;
 
-use clap::{App, Arg, ArgMatches};
+use clap::{App, Arg, ArgMatches, SubCommand};
 use std::process;
+mod server;
 
 fn main() {
     let matches = App::new("priceoracle")
@@ -18,6 +19,15 @@ fn main() {
                 .short("v")
                 .multiple(true)
                 .help("verbosity level"),
+        )
+        .subcommand(SubCommand::with_name("server")
+            .about("starts http server")
+            .arg(Arg::with_name("bind")
+                .required(true)
+                .takes_value(true)
+                .short("b")
+                .long("bind")
+                .help("address:port"))
         )
         .get_matches();
     if let Err(e) = run(matches) {
@@ -38,12 +48,22 @@ fn run(matches: ArgMatches) -> Result<(), String> {
     let drain = slog_term::FullFormat::new(decorator).build().fuse();
     let drain = slog::LevelFilter(drain, min_log_level).fuse();
     let drain = slog_async::Async::new(drain).build().fuse();
-    let logger = slog::Logger::root(drain, o!("version" => "0.0.1"));
+    let logger = slog::Logger::root(drain, o!());
     trace!(logger, "priceoracle_setup");
     // setting up app...
     debug!(logger, "load_configuration");
     trace!(logger, "priceoracle_setup_complete");
     // starting processing...
     info!(logger, "processing_started");
-    Ok(())
+
+    match matches.subcommand() {
+        ("server", Some(server_matches)) => {
+            server::run(logger, server_matches)
+        },
+        ("", None) => {
+            error!(logger, "no subcommand was used");
+            Ok(())
+        },
+        _            => unreachable!(),
+    }
 }
