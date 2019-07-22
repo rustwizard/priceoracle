@@ -7,6 +7,7 @@ use slog::Drain;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 use std::process;
+mod server;
 
 fn main() {
     let matches = App::new("priceoracle")
@@ -57,8 +58,7 @@ fn run(matches: ArgMatches) -> Result<(), String> {
 
     match matches.subcommand() {
         ("server", Some(server_matches)) => {
-            info!(logger, "server binds to {}", server_matches.value_of("bind").unwrap());
-            Ok(())
+            server::run(logger, server_matches)
         },
         ("", None) => {
             error!(logger, "no subcommand was used");
