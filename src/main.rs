@@ -26,7 +26,7 @@ fn main() {
                 .arg(
                     Arg::with_name("bind")
                         .required(true)
-                        .takes_value(true)
+                        .env("PO_SERVER_BIND")
                         .short("b")
                         .long("bind")
                         .help("address:port"),

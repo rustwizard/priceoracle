@@ -6,4 +6,4 @@ services:
       - "127.0.0.1:8080:8080"
     environment:
       PO_SERVER_BIND: 0.0.0.0:8080
-    command: ["server", "--bind=0.0.0.0:8080"]
+    command: ["server"]
