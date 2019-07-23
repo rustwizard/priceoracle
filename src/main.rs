@@ -20,14 +20,17 @@ fn main() {
                 .multiple(true)
                 .help("verbosity level"),
         )
-        .subcommand(SubCommand::with_name("server")
-            .about("starts http server")
-            .arg(Arg::with_name("bind")
-                .required(true)
-                .takes_value(true)
-                .short("b")
-                .long("bind")
-                .help("address:port"))
+        .subcommand(
+            SubCommand::with_name("server")
+                .about("starts http server")
+                .arg(
+                    Arg::with_name("bind")
+                        .required(true)
+                        .takes_value(true)
+                        .short("b")
+                        .long("bind")
+                        .help("address:port"),
+                ),
         )
         .get_matches();
     if let Err(e) = run(matches) {
@@ -57,13 +60,11 @@ fn run(matches: ArgMatches) -> Result<(), String> {
     info!(logger, "processing_started");
 
     match matches.subcommand() {
-        ("server", Some(server_matches)) => {
-            server::run(logger, server_matches)
-        },
+        ("server", Some(server_matches)) => server::run(logger, server_matches),
         ("", None) => {
             error!(logger, "no subcommand was used");
             Ok(())
-        },
-        _            => unreachable!(),
+        }
+        _ => unreachable!(),
     }
 }

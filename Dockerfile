@@ -40,4 +40,4 @@ USER priceoracle
 
 EXPOSE 8080
 
-CMD ["./priceoracle"]
+ENTRYPOINT ["./priceoracle"]
