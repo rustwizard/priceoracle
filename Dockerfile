@@ -1,12 +1,17 @@
 # All respects goes to the author of https://shaneutt.com/blog/rust-fast-small-docker-image-builds/
+FROM ethereum/solc:nightly-alpine as solidity-compiler
+
+WORKDIR /root/
+
+COPY ./src/contract/* .
+
+RUN solc --abi --bin priceoracle.sol -o .
 
 FROM rust:latest as cargo-build
 
-RUN apt-get update
-
-RUN apt-get install musl-tools -y
-
-RUN rustup target add x86_64-unknown-linux-musl
+RUN apt-get update && \
+    apt-get install -y musl-tools && \
+    rustup target add x86_64-unknown-linux-musl
 
 WORKDIR /usr/src/priceoracle
 
@@ -33,6 +38,7 @@ RUN adduser -D -s /bin/sh -u 1000 -G priceoracle priceoracle
 WORKDIR /home/priceoracle/bin/
 
 COPY --from=cargo-build /usr/src/priceoracle/target/x86_64-unknown-linux-musl/release/priceoracle .
+COPY --from=solidity-compiler /root/PriceOracle.* ./
 
 RUN chown priceoracle:priceoracle priceoracle
 
