@@ -27,6 +27,8 @@ RUN rm -f target/x86_64-unknown-linux-musl/release/deps/priceoracle*
 
 COPY . .
 
+COPY --from=solidity-compiler /root/PriceOracle.* ./src/contract/
+
 RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl
 
 FROM alpine:latest
@@ -38,7 +40,6 @@ RUN adduser -D -s /bin/sh -u 1000 -G priceoracle priceoracle
 WORKDIR /home/priceoracle/bin/
 
 COPY --from=cargo-build /usr/src/priceoracle/target/x86_64-unknown-linux-musl/release/priceoracle .
-COPY --from=solidity-compiler /root/PriceOracle.* ./
 
 RUN chown priceoracle:priceoracle priceoracle
 
