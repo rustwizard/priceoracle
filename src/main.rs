@@ -8,6 +8,7 @@ use slog::Drain;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use std::process;
 mod server;
+mod deploy;
 
 fn main() {
     let matches = App::new("priceoracle")
@@ -30,6 +31,18 @@ fn main() {
                         .short("b")
                         .long("bind")
                         .help("address:port"),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("deploy")
+                .about("deploys contract to the ethereum")
+                .arg(
+                    Arg::with_name("net")
+                        .required(true)
+                        .env("PO_ETHEREUM_NETWORK")
+                        .short("n")
+                        .long("net")
+                        .help("mainnet or testnet"),
                 ),
         )
         .get_matches();
@@ -61,6 +74,7 @@ fn run(matches: ArgMatches) -> Result<(), String> {
 
     match matches.subcommand() {
         ("server", Some(server_matches)) => server::run(logger, server_matches),
+        ("deploy", Some(deploy_matches)) => deploy::run(logger, deploy_matches),
         ("", None) => {
             error!(logger, "no subcommand was used");
             Ok(())
