@@ -2,6 +2,8 @@ extern crate clap;
 #[macro_use]
 extern crate slog;
 extern crate slog_term;
+#[macro_use]
+extern crate rust_embed;
 
 use slog::Drain;
 
