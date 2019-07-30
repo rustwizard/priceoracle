@@ -3,9 +3,9 @@ FROM ethereum/solc:nightly-alpine as solidity-compiler
 
 WORKDIR /root/
 
-COPY ./src/contract/* .
+COPY ./src/contract/* ./
 
-RUN solc --abi --bin priceoracle.sol -o .
+RUN solc --overwrite --abi --bin priceoracle.sol -o .
 
 FROM rust:latest as cargo-build
 
