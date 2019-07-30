@@ -1,6 +1,7 @@
 use clap::ArgMatches;
 use web3::contract::{Contract, Options};
 use web3::futures::Future;
+use web3::types::U256;
 
 #[derive(RustEmbed)]
 #[folder = "src/contract/"]
@@ -29,14 +30,18 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     }
 
     info!(logger,"Accounts: {:?}", accounts);
+    let gas_price: U256 = web3.eth().gas_price().wait().unwrap();
+
+    info!(logger,"suggested gas_price: {:?}", gas_price);
 
     let bc = std::str::from_utf8(contract_bytecode.as_ref()).unwrap();
+
     let contract = Contract::deploy(web3.eth(), contract_abi.as_ref())
         .unwrap()
         .confirmations(0)
         .options(Options::with(|opt| {
             opt.value = Some(0.into());
-            opt.gas_price = Some(5.into());
+            opt.gas_price = Some(gas_price);
             opt.gas = Some(1_000_000.into());
         }))
     .execute(
