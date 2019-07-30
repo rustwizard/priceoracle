@@ -1,3 +1,4 @@
 .idea/
+src/contract/PriceOracle.*
 /target
 **/*.rs.bk
