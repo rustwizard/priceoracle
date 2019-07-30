@@ -24,6 +24,10 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
 
     let accounts = web3.eth().accounts().wait().unwrap();
 
+    if accounts.len() == 0 {
+        return Err(String::from("there is no any accounts for contract deploy"))
+    }
+
     info!(logger,"Accounts: {:?}", accounts);
 
     let bc = std::str::from_utf8(contract_bytecode.as_ref()).unwrap();
