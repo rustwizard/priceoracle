@@ -69,7 +69,7 @@ fn main() {
                 .arg(
                     Arg::with_name("contractaddr")
                         .required(true)
-                        .takes_value(true)
+                        .env("PO_CONTRACT_ADDRESS")
                         .short("ca")
                         .long("contractaddr")
                         .help("address of the contract int the Ethereum network"),
