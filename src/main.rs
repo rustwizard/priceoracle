@@ -11,6 +11,7 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use std::process;
 mod server;
 mod deploy;
+mod updateprice;
 
 fn main() {
     let matches = App::new("priceoracle")
@@ -47,6 +48,25 @@ fn main() {
                         .help("mainnet or testnet"),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("updateprice")
+                .about("update price in the contract")
+                .arg(
+                    Arg::with_name("net")
+                        .required(true)
+                        .env("PO_ETHEREUM_NETWORK")
+                        .long("net")
+                        .help("mainnet or testnet"),
+                )
+                .arg(
+                    Arg::with_name("newprice")
+                        .required(true)
+                        .takes_value(true)
+                        .short("np")
+                        .long("newprice")
+                        .help("set new price in uint256"),
+                ),
+        )
         .get_matches();
     if let Err(e) = run(matches) {
         println!("Application error: {}", e);
@@ -77,6 +97,7 @@ fn run(matches: ArgMatches) -> Result<(), String> {
     match matches.subcommand() {
         ("server", Some(server_matches)) => server::run(logger, server_matches),
         ("deploy", Some(deploy_matches)) => deploy::run(logger, deploy_matches),
+        ("updateprice", Some(up_matches)) => updateprice::run(logger, up_matches),
         ("", None) => {
             error!(logger, "no subcommand was used");
             Ok(())
