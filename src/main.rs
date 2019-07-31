@@ -65,7 +65,16 @@ fn main() {
                         .short("np")
                         .long("newprice")
                         .help("set new price in uint256"),
+                )
+                .arg(
+                    Arg::with_name("contractaddr")
+                        .required(true)
+                        .takes_value(true)
+                        .short("ca")
+                        .long("contractaddr")
+                        .help("address of the contract int the Ethereum network"),
                 ),
+
         )
         .get_matches();
     if let Err(e) = run(matches) {
