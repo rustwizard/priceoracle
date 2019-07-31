@@ -5,7 +5,7 @@ contract PriceOracle {
     mapping (address => bool) admins;
 
     // How much BTC you get for 1 ETH, multiplied by 10^18
-    uint256 public ETHPrice;
+    uint256 private ETHPrice;
 
     event PriceChanged(uint256 newPrice);
 
