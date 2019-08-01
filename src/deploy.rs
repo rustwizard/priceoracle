@@ -18,7 +18,7 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     eloop.into_remote();
 
     let web3 = web3::Web3::new(http);
-    let contract_address =  match with_eth_node(web3, &logger) {
+    let contract_address =  match with_own_eth_node(web3, &logger) {
         Err(e) => return Err(e.to_string()),
         Ok(a) => a,
     };
@@ -28,7 +28,25 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     Ok(())
 }
 
-fn with_eth_node(eth_client: web3::Web3<Http>, logger: &slog::Logger) -> Result<(Address), String> {
+fn with_existing_wallet(eth_client: web3::Web3<Http>,
+                        logger: &slog::Logger,
+                        from_addr: &str,
+                        _private_key: &str) -> Result<(Address), String> {
+    let contract_abi = Asset::get("PriceOracle.abi").unwrap();
+    info!(logger, "{:?}", std::str::from_utf8(contract_abi.as_ref()));
+
+    let contract_bytecode = Asset::get("PriceOracle.bin").unwrap();
+
+    let gas_price: U256 = eth_client.eth().gas_price().wait().unwrap();
+
+    info!(logger,"deploy contract from {} with suggested gas_price: {:?}", from_addr, gas_price);
+
+    let _bc = std::str::from_utf8(contract_bytecode.as_ref()).unwrap();
+
+    Ok("contract_address".parse().unwrap())
+}
+
+fn with_own_eth_node(eth_client: web3::Web3<Http>, logger: &slog::Logger) -> Result<(Address), String> {
     let accounts = eth_client.eth().accounts().wait().unwrap();
 
     if accounts.len() == 0 {
