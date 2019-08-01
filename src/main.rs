@@ -46,6 +46,18 @@ fn main() {
                         .short("n")
                         .long("net")
                         .help("mainnet or testnet"),
+                )
+                .arg(
+                    Arg::with_name("from_addr")
+                        .env("PO_ETHEREUM_FROM_ADDR")
+                        .long("from_addr")
+                        .help("address will be used for contract deploy"),
+                )
+                .arg(
+                    Arg::with_name("private_key")
+                        .env("PO_ETHEREUM_PRIVATE_KEY")
+                        .long("private_key")
+                        .help("private key for tx signing"),
                 ),
         )
         .subcommand(
