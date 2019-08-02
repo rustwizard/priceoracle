@@ -58,8 +58,8 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
         eth_client.eth().transaction_count(my_account, None);
     let tx_request = ethtxsign::RawTransaction {
         to: None,
-        gas: 1_000_000.into(),
-        gas_price: 1_000_000.into(),
+        gas: 210_000.into(),
+        gas_price: 1_000_000_000.into(),
         value: 0.into(),
         data: contract_bytecode.into(),
         nonce: nonce.wait().unwrap(),
