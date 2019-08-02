@@ -3,24 +3,37 @@ use web3::contract::{Contract, Options};
 use web3::futures::Future;
 use web3::types::{U256, Address};
 use web3::transports::Http;
+use std::time::Duration;
+
+use ethereum_types::H256;
 
 #[derive(RustEmbed)]
 #[folder = "src/contract/"]
 struct Asset;
 
-
 pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let net = arg.value_of("net").unwrap();
 
-    info!(logger, "deploy called to the {} network", net);
+    let from_addr =  arg.value_of("from_addr").unwrap();
+    let private_key = arg.value_of("private_key").unwrap();
+
+    info!(logger, "deploy called to the {} network with {}", net, from_addr);
 
     let (eloop, http) = web3::transports::Http::new(net).unwrap();
     eloop.into_remote();
 
     let web3 = web3::Web3::new(http);
-    let contract_address =  match with_own_eth_node(web3, &logger) {
-        Err(e) => return Err(e.to_string()),
-        Ok(a) => a,
+
+    let contract_address =  if from_addr.len() != 0 {
+        match with_existing_wallet(web3, &logger, from_addr, private_key) {
+            Err(e) => return Err(e.to_string()),
+            Ok(a) => a,
+        };
+    } else {
+        match with_own_eth_node(web3, &logger) {
+            Err(e) => return Err(e.to_string()),
+            Ok(a) => a,
+        };
     };
 
     info!(logger,"contract address: {:?}", contract_address);
@@ -31,7 +44,7 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
 fn with_existing_wallet(eth_client: web3::Web3<Http>,
                         logger: &slog::Logger,
                         from_addr: &str,
-                        _private_key: &str) -> Result<(Address), String> {
+                        private_key: &str) -> Result<(Address), String> {
     let contract_abi = Asset::get("PriceOracle.abi").unwrap();
     info!(logger, "{:?}", std::str::from_utf8(contract_abi.as_ref()));
 
@@ -40,8 +53,25 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
     let gas_price: U256 = eth_client.eth().gas_price().wait().unwrap();
 
     info!(logger,"deploy contract from {} with suggested gas_price: {:?}", from_addr, gas_price);
+    let my_account: Address = from_addr.parse().unwrap();
+    let nonce  =
+        eth_client.eth().transaction_count(my_account, None);
+    let tx_request = ethtxsign::RawTransaction {
+        to: None,
+        gas: 1_000_000.into(),
+        gas_price: 1_000_000.into(),
+        value: 0.into(),
+        data: contract_bytecode.into(),
+        nonce: nonce.wait().unwrap(),
+    };
 
-    let _bc = std::str::from_utf8(contract_bytecode.as_ref()).unwrap();
+    let pk = pvt_key_from_slice(hex::decode(private_key.as_bytes()).unwrap().as_slice()).unwrap();
+    let tx = tx_request.sign(&pk.into(), &3.into());
+
+    let result =
+        eth_client.send_raw_transaction_with_confirmation(tx.into(),Duration::from_secs(1), 1);
+    let receipt = result.wait().unwrap();
+    info!(logger, "tx {} created", receipt.transaction_hash);
 
     Ok("contract_address".parse().unwrap())
 }
@@ -87,3 +117,13 @@ fn with_own_eth_node(eth_client: web3::Web3<Http>, logger: &slog::Logger) -> Res
 
     Ok(contract_address)
 }
+
+fn pvt_key_from_slice(key: &[u8]) -> Option<H256> {
+    if key.len() != 32 {
+        return None
+    }
+    let mut h = H256::zero();
+    h.as_bytes_mut().copy_from_slice(&key[0..32]);
+    Some(h)
+}
+
