@@ -52,7 +52,7 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
 
     let gas_price = match eth_client.eth().gas_price().wait() {
         Ok(gas_price) => gas_price,
-        Err(e) => Err(e.to_string()),
+        Err(e) => return Err(e.to_string()),
     };
 
     info!(logger,"deploy contract from {} with suggested gas_price: {:?}",
@@ -60,7 +60,10 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
 
     let data = hex::decode(contract_bytecode.as_ref());
 
-    let my_account: Address = from_addr.parse().unwrap();
+    let my_account: Address = match from_addr.parse() {
+        Ok(from_addr) => from_addr,
+        Err(e) => return Err(e.to_string()),
+    };
 
     let nonce_cnt  = match eth_client.eth().transaction_count(my_account, None).wait() {
         Ok(nonce) => nonce,
