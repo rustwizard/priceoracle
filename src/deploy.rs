@@ -51,17 +51,21 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
     let contract_bytecode = Asset::get("PriceOracle.bin").unwrap();
 
     let gas_price: U256 = eth_client.eth().gas_price().wait().unwrap();
+    let bc = std::str::from_utf8(contract_bytecode.as_ref());
+    info!(logger,"deploy {:?} contract from {} with suggested gas_price: {:?}", bc.unwrap(),
+          from_addr, gas_price);
 
-    info!(logger,"deploy contract from {} with suggested gas_price: {:?}", from_addr, gas_price);
+    let data = hex::decode(contract_bytecode.as_ref());
+
     let my_account: Address = from_addr.parse().unwrap();
     let nonce  =
         eth_client.eth().transaction_count(my_account, None);
     let tx_request = ethtxsign::RawTransaction {
         to: None,
-        gas: 210_000.into(),
-        gas_price: 1_000_000_000.into(),
+        gas: 1_000_000.into(),
+        gas_price: gas_price.into(),
         value: 0.into(),
-        data: contract_bytecode.into(),
+        data: data.unwrap(),
         nonce: nonce.wait().unwrap(),
     };
 

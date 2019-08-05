@@ -4,6 +4,7 @@ extern crate slog;
 extern crate slog_term;
 #[macro_use]
 extern crate rust_embed;
+extern crate hex;
 
 use slog::Drain;
 
