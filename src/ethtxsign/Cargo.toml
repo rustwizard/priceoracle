@@ -2,6 +2,7 @@
 name = "ethtxsign"
 version = "0.0.1"
 authors = ["Rust Wizard <rw@rustwizard.net>"]
+description = "all respects goes to the author of the ethereum-tx-sign Mate Antunovic!"
 
 [dependencies]
 ethereum-types = "0.6.0"
