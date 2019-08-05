@@ -5,7 +5,7 @@ contract PriceOracle {
     mapping (address => bool) admins;
 
     // How much BTC you get for 1 ETH, multiplied by 10^18
-    uint256 private ETHPrice;
+    uint256 ETHPrice;
 
     event PriceChanged(uint256 newPrice);
 
@@ -13,15 +13,15 @@ contract PriceOracle {
         admins[msg.sender] = true;
     }
 
-    function updatePrice(uint256 _newPrice) public {
-        require(_newPrice > 0);
-        require(admins[msg.sender] == true);
+    function updatePrice(uint256 _newPrice) public {gu
+        require(_newPrice > 0, "new price must be > 0");
+        require(admins[msg.sender] == true, "u are not admin");
         ETHPrice = _newPrice;
         emit PriceChanged(_newPrice);
     }
 
     function setAdmin(address _newAdmin, bool _value) public {
-        require(admins[msg.sender] == true);
+        require(admins[msg.sender] == true, "u must be admin to set admin");
         admins[_newAdmin] = _value;
     }
 }
