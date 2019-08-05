@@ -74,7 +74,12 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
 
     let result =
         eth_client.send_raw_transaction_with_confirmation(tx.into(),Duration::from_secs(1), 1);
-    let receipt = result.wait().unwrap();
+
+    let receipt = match result.wait() {
+        Ok(receipt) => receipt,
+        Err(e) => return Err(e.to_string()),
+    };
+
     info!(logger, "tx {} created", receipt.transaction_hash);
 
     Ok("contract_address".parse().unwrap())
