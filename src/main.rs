@@ -99,6 +99,12 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .env("PO_ETHEREUM_PRIVATE_KEY")
                         .long("private_key")
                         .help("private key for tx signing"),
+                )
+                .arg(
+                    Arg::with_name("gas_limit")
+                        .env("PO_ETHEREUM_GAS_LIMIT")
+                        .long("gas_limit")
+                        .help("gas limit for tx"),
                 ),
         )
         .subcommand(
