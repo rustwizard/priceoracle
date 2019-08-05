@@ -5,7 +5,7 @@ use web3::types::{U256, Address};
 use web3::transports::Http;
 use std::time::Duration;
 
-use ethereum_types::H256;
+use ethereum_types::{H256, U256 as EU256};
 
 #[derive(RustEmbed)]
 #[folder = "src/contract/"]
@@ -17,6 +17,8 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let from_addr =  arg.value_of("from_addr").unwrap();
     let private_key = arg.value_of("private_key").unwrap();
 
+    let gas_limit = arg.value_of("gas_limit").unwrap();
+    let ugas_limit = EU256::from_dec_str(gas_limit).unwrap();
     info!(logger, "deploy called to the {} network with {}", net, from_addr);
 
     let (eloop, http) = web3::transports::Http::new(net).unwrap();
@@ -25,12 +27,12 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let web3 = web3::Web3::new(http);
 
     let contract_address =  if from_addr.len() != 0 {
-        match with_existing_wallet(web3, &logger, from_addr, private_key) {
+        match with_existing_wallet(web3, &logger, from_addr, private_key, ugas_limit) {
             Err(e) => return Err(e.to_string()),
             Ok(a) => a,
         };
     } else {
-        match with_own_eth_node(web3, &logger) {
+        match with_own_eth_node(web3, &logger, ugas_limit) {
             Err(e) => return Err(e.to_string()),
             Ok(a) => a,
         };
@@ -44,7 +46,8 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
 fn with_existing_wallet(eth_client: web3::Web3<Http>,
                         logger: &slog::Logger,
                         from_addr: &str,
-                        private_key: &str) -> Result<(Address), String> {
+                        private_key: &str,
+                        gas_limit: EU256) -> Result<(Address), String> {
     let contract_abi = Asset::get("PriceOracle.abi").unwrap();
     info!(logger, "{:?}", std::str::from_utf8(contract_abi.as_ref()));
 
@@ -72,7 +75,7 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
 
     let tx_request = ethtxsign::RawTransaction {
         to: None,
-        gas: 1_000_000.into(),
+        gas: gas_limit.into(),
         gas_price: gas_price.into(),
         value: 0.into(),
         data: data.unwrap(),
@@ -95,7 +98,7 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
     Ok("contract_address".parse().unwrap())
 }
 
-fn with_own_eth_node(eth_client: web3::Web3<Http>, logger: &slog::Logger) -> Result<(Address), String> {
+fn with_own_eth_node(eth_client: web3::Web3<Http>, logger: &slog::Logger, gas_limit: EU256) -> Result<(Address), String> {
     let accounts = eth_client.eth().accounts().wait().unwrap();
 
     if accounts.len() == 0 {
@@ -121,7 +124,7 @@ fn with_own_eth_node(eth_client: web3::Web3<Http>, logger: &slog::Logger) -> Res
         .options(Options::with(|opt| {
             opt.value = Some(0.into());
             opt.gas_price = Some(gas_price);
-            opt.gas = Some(1_000_000.into());
+            opt.gas = Some(gas_limit.into());
         }))
         .execute(
             bc,
