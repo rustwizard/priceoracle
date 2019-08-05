@@ -58,15 +58,19 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
     let data = hex::decode(contract_bytecode.as_ref());
 
     let my_account: Address = from_addr.parse().unwrap();
-    let nonce  =
-        eth_client.eth().transaction_count(my_account, None);
+
+    let nonce_cnt  = match eth_client.eth().transaction_count(my_account, None).wait() {
+        Ok(nonce) => nonce,
+        Err(e) => return Err(e.to_string()),
+    };
+
     let tx_request = ethtxsign::RawTransaction {
         to: None,
         gas: 1_000_000.into(),
         gas_price: gas_price.into(),
         value: 0.into(),
         data: data.unwrap(),
-        nonce: nonce.wait().unwrap(),
+        nonce: nonce_cnt,
     };
 
     let pk = pvt_key_from_slice(hex::decode(private_key.as_bytes()).unwrap().as_slice()).unwrap();
