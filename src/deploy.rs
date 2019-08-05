@@ -50,9 +50,12 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
 
     let contract_bytecode = Asset::get("PriceOracle.bin").unwrap();
 
-    let gas_price: U256 = eth_client.eth().gas_price().wait().unwrap();
-    let bc = std::str::from_utf8(contract_bytecode.as_ref());
-    info!(logger,"deploy {:?} contract from {} with suggested gas_price: {:?}", bc.unwrap(),
+    let gas_price = match eth_client.eth().gas_price().wait() {
+        Ok(gas_price) => gas_price,
+        Err(e) => Err(e.to_string()),
+    };
+
+    info!(logger,"deploy contract from {} with suggested gas_price: {:?}",
           from_addr, gas_price);
 
     let data = hex::decode(contract_bytecode.as_ref());
