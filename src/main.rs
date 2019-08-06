@@ -138,6 +138,18 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .env("PO_ETHEREUM_GAS_LIMIT")
                         .long("gas_limit")
                         .help("gas limit for tx"),
+                )
+                .arg(
+                    Arg::with_name("from_addr")
+                        .env("PO_ETHEREUM_FROM_ADDR")
+                        .long("from_addr")
+                        .help("address will be used for contract deploy"),
+                )
+                .arg(
+                    Arg::with_name("private_key")
+                        .env("PO_ETHEREUM_PRIVATE_KEY")
+                        .long("private_key")
+                        .help("private key for tx signing"),
                 ),
 
         ).get_matches()
