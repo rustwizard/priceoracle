@@ -77,8 +77,26 @@ fn with_own_eth_node(eth_client: web3::Web3<Http>,
         contract_abi,
     ).unwrap();
 
+    let options = if gas_limit.ne(&U256::zero()) {
+
+        let gas_price = match eth_client.eth().gas_price().wait() {
+            Ok(gas_price) => gas_price,
+            Err(e) => return Err(e.to_string()),
+        };
+
+        Options {
+            gas: Some(gas_limit),
+            gas_price: Some(gas_price),
+            value: None,
+            nonce: None,
+            condition: None
+        }
+    } else {
+        Options::default()
+    };
+
     let result
-        = contract.call("updatePrice", (newprice,), accounts[0].into(), Options::default());
+        = contract.call("updatePrice", (newprice,), accounts[0].into(), options.into());
 
     let tx = result.wait().unwrap();
 
