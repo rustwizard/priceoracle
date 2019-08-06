@@ -19,6 +19,9 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let gas_limit = arg.value_of("gas_limit").unwrap();
     let ugas_limit: EU256 = EU256::from_dec_str(gas_limit).unwrap();
 
+    let from_addr =  arg.value_of("from_addr").unwrap();
+    let private_key = arg.value_of("private_key").unwrap();
+
     info!(logger, "updateprice called to the {} network with {} price and contractaddr {} and \
                     gas_limit {}",
           net, newprice, ca, ugas_limit);
@@ -35,7 +38,7 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let price: U256 = newprice.parse().unwrap();
 
     let tx =  if from_addr.len() != 0 {
-        match with_own_eth_node(web3, &logger, contract_address,
+        match with_own_eth_node(web3, contract_address,
                                 contract_abi.as_ref(), ugas_limit, price) {
             Err(e) => return Err(e.to_string()),
             Ok(tx) => tx,
@@ -57,7 +60,7 @@ fn with_existing_wallet() -> Result<(H256), String> {
     Ok(H256::zero())
 }
 
-fn with_own_eth_node(eth_client: web3::Web3<Http>, logger: &slog::Logger,
+fn with_own_eth_node(eth_client: web3::Web3<Http>,
                      contract_address: Address,
                      contract_abi: &[u8],
                      gas_limit: EU256,
@@ -69,13 +72,13 @@ fn with_own_eth_node(eth_client: web3::Web3<Http>, logger: &slog::Logger,
     }
 
     let contract = Contract::from_json(
-        web3.eth(),
+        eth_client.eth(),
         contract_address,
         contract_abi,
     ).unwrap();
 
     let result
-        = contract.call("updatePrice", (price,), accounts[0].into(), Options::default());
+        = contract.call("updatePrice", (newprice,), accounts[0].into(), Options::default());
 
     let tx = result.wait().unwrap();
 
