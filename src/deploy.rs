@@ -95,6 +95,7 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
 
     info!(logger, "tx {} created", receipt.transaction_hash);
 
+    //TODO: return actual contract address
     Ok("contract_address".parse().unwrap())
 }
 

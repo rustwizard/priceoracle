@@ -1,7 +1,8 @@
 use clap::ArgMatches;
 use web3::contract::{Contract, Options};
-use web3::types::{Address, U256};
+use web3::types::{Address, U256, H256};
 use web3::futures::Future;
+use web3::transports::Http;
 use std::vec::Vec;
 
 use ethereum_types::{U256 as EU256};
@@ -31,7 +32,37 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
 
     let web3 = web3::Web3::new(http);
 
-    let accounts = web3.eth().accounts().wait().unwrap();
+    let price: U256 = newprice.parse().unwrap();
+
+    let tx =  if from_addr.len() != 0 {
+        match with_own_eth_node(web3, &logger, contract_address,
+                                contract_abi.as_ref(), ugas_limit, price) {
+            Err(e) => return Err(e.to_string()),
+            Ok(tx) => tx,
+        };
+    } else {
+        match with_existing_wallet() {
+            Err(e) => return Err(e.to_string()),
+            Ok(tx) => tx,
+        };
+    };
+
+
+    info!(logger, "tx: {:?}", tx);
+
+    Ok(())
+}
+
+fn with_existing_wallet() -> Result<(H256), String> {
+    Ok(H256::zero())
+}
+
+fn with_own_eth_node(eth_client: web3::Web3<Http>, logger: &slog::Logger,
+                     contract_address: Address,
+                     contract_abi: &[u8],
+                     gas_limit: EU256,
+                     newprice: U256) -> Result<(H256), String> {
+    let accounts = eth_client.eth().accounts().wait().unwrap();
 
     if accounts.len() == 0 {
         return Err(String::from("there is no any accounts for contract deploy"))
@@ -40,18 +71,13 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let contract = Contract::from_json(
         web3.eth(),
         contract_address,
-        contract_abi.as_ref(),
+        contract_abi,
     ).unwrap();
 
-    let price: U256 = newprice.parse().unwrap();
-    let from_addr = accounts[0].into();
-
     let result
-        = contract.call("updatePrice", (price,), from_addr, Options::default());
+        = contract.call("updatePrice", (price,), accounts[0].into(), Options::default());
 
     let tx = result.wait().unwrap();
 
-    info!(logger, "tx: {:?}", tx);
-
-    Ok(())
+    Ok(tx)
 }
