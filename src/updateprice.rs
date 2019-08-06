@@ -44,7 +44,7 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
         contract_abi.as_ref(),
     ).unwrap();
 
-    let tx =  if from_addr.len() != 0 {
+    let tx =  if from_addr.len() == 0 {
         match with_own_eth_node(web3, contract,
                                ugas_limit, price) {
             Err(e) => return Err(e.to_string()),
