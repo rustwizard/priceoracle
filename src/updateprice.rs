@@ -4,6 +4,8 @@ use web3::types::{Address, U256};
 use web3::futures::Future;
 use std::vec::Vec;
 
+use ethereum_types::{U256 as EU256};
+
 #[derive(RustEmbed)]
 #[folder = "src/contract/"]
 struct Asset;
@@ -12,8 +14,13 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let net = arg.value_of("net").unwrap();
     let newprice = arg.value_of("newprice").unwrap();
     let ca = arg.value_of("contractaddr").unwrap();
-    info!(logger, "updateprice called to the {} network with {} price. contractaddr {}",
-          net, newprice, ca);
+
+    let gas_limit = arg.value_of("gas_limit").unwrap();
+    let ugas_limit: EU256 = EU256::from_dec_str(gas_limit).unwrap();
+
+    info!(logger, "updateprice called to the {} network with {} price and contractaddr {} and \
+                    gas_limit {}",
+          net, newprice, ca, ugas_limit);
 
     let contract_abi = Asset::get("PriceOracle.abi").unwrap();
 
