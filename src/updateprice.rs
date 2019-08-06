@@ -37,9 +37,16 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
 
     let price: U256 = newprice.parse().unwrap();
 
+
+    let contract = Contract::from_json(
+        web3.eth(),
+        contract_address,
+        contract_abi.as_ref(),
+    ).unwrap();
+
     let tx =  if from_addr.len() != 0 {
-        match with_own_eth_node(web3, contract_address,
-                                contract_abi.as_ref(), ugas_limit, price) {
+        match with_own_eth_node(web3, contract,
+                               ugas_limit, price) {
             Err(e) => return Err(e.to_string()),
             Ok(tx) => tx,
         };
@@ -56,13 +63,13 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     Ok(())
 }
 
-fn with_existing_wallet() -> Result<(H256), String> {
+fn with_existing_wallet(
+                        ) -> Result<(H256), String> {
     Ok(H256::zero())
 }
 
 fn with_own_eth_node(eth_client: web3::Web3<Http>,
-                     contract_address: Address,
-                     contract_abi: &[u8],
+                     contract: Contract<Http>,
                      gas_limit: EU256,
                      newprice: U256) -> Result<(H256), String> {
     let accounts = eth_client.eth().accounts().wait().unwrap();
@@ -70,12 +77,6 @@ fn with_own_eth_node(eth_client: web3::Web3<Http>,
     if accounts.len() == 0 {
         return Err(String::from("there is no any accounts for contract deploy"))
     }
-
-    let contract = Contract::from_json(
-        eth_client.eth(),
-        contract_address,
-        contract_abi,
-    ).unwrap();
 
     let options = if gas_limit.ne(&U256::zero()) {
 
