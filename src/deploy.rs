@@ -18,7 +18,7 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let private_key = arg.value_of("private_key").unwrap();
 
     let gas_limit = arg.value_of("gas_limit").unwrap();
-    let ugas_limit = EU256::from_dec_str(gas_limit).unwrap();
+    let ugas_limit: EU256 = EU256::from_dec_str(gas_limit).unwrap();
     info!(logger, "deploy called to the {} network with {}", net, from_addr);
 
     let (eloop, http) = web3::transports::Http::new(net).unwrap();

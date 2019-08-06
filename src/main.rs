@@ -132,6 +132,12 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .short("ca")
                         .long("contractaddr")
                         .help("address of the contract int the Ethereum network"),
+                )
+                .arg(
+                    Arg::with_name("gas_limit")
+                        .env("PO_ETHEREUM_GAS_LIMIT")
+                        .long("gas_limit")
+                        .help("gas limit for tx"),
                 ),
 
         ).get_matches()
