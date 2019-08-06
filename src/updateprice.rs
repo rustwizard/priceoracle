@@ -20,7 +20,7 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let ugas_limit: EU256 = EU256::from_dec_str(gas_limit).unwrap();
 
     let from_addr =  arg.value_of("from_addr").unwrap();
-    let private_key = arg.value_of("private_key").unwrap();
+    let _private_key = arg.value_of("private_key").unwrap();
 
     info!(logger, "updateprice called to the {} network with {} price and contractaddr {} and \
                     gas_limit {}",
