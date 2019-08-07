@@ -11,3 +11,4 @@ extern crate rlp;
 mod raw_transaction;
 
 pub use self::raw_transaction::RawTransaction;
+pub use self::raw_transaction::keccak256_hash;

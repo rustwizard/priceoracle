@@ -4,7 +4,6 @@ use web3::types::{Address, U256, H256};
 use web3::futures::Future;
 use web3::transports::Http;
 use std::vec::Vec;
-
 use ethereum_types::{U256 as EU256};
 
 #[derive(RustEmbed)]
@@ -51,7 +50,7 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
             Ok(tx) => tx,
         };
     } else {
-        match with_existing_wallet() {
+        match with_existing_wallet(web3, ugas_limit, price) {
             Err(e) => return Err(e.to_string()),
             Ok(tx) => tx,
         };
@@ -63,8 +62,11 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     Ok(())
 }
 
-fn with_existing_wallet(
-                        ) -> Result<(H256), String> {
+fn with_existing_wallet(_eth_client: web3::Web3<Http>,
+                        _gas_limit: EU256,
+                        _newprice: U256) -> Result<(H256), String> {
+    let method_id = ethtxsign::keccak256_hash(b"updatePrice(uint256)");
+    println!("method id {:?}", &hex::encode(method_id)[..8]);
     Ok(H256::zero())
 }
 

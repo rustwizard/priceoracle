@@ -13,7 +13,7 @@ contract PriceOracle {
         admins[msg.sender] = true;
     }
 
-    function updatePrice(uint256 _newPrice) public {gu
+    function updatePrice(uint256 _newPrice) public {
         require(_newPrice > 0, "new price must be > 0");
         require(admins[msg.sender] == true, "u are not admin");
         ETHPrice = _newPrice;

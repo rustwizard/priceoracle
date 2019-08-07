@@ -63,7 +63,7 @@ impl RawTransaction {
     }
 }
 
-fn keccak256_hash(bytes: &[u8]) -> Vec<u8> {
+pub fn keccak256_hash(bytes: &[u8]) -> Vec<u8> {
     keccak256(bytes).into_iter().cloned().collect()
 }
 
