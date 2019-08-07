@@ -19,6 +19,7 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
 
     let gas_limit = arg.value_of("gas_limit").unwrap();
     let ugas_limit: EU256 = EU256::from_dec_str(gas_limit).unwrap();
+    let chain_id = arg.value_of("chain_id").unwrap();
     info!(logger, "deploy called to the {} network with {}", net, from_addr);
 
     let (eloop, http) = web3::transports::Http::new(net).unwrap();
@@ -27,7 +28,12 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let web3 = web3::Web3::new(http);
 
     let contract_address =  if from_addr.len() != 0 {
-        match with_existing_wallet(web3, &logger, from_addr, private_key, ugas_limit) {
+        match with_existing_wallet(web3,
+                                   &logger,
+                                   from_addr,
+                                   private_key,
+                                   &chain_id.parse::<u8>().unwrap(),
+                                   ugas_limit) {
             Err(e) => return Err(e.to_string()),
             Ok(a) => a,
         };
@@ -47,6 +53,7 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
                         logger: &slog::Logger,
                         from_addr: &str,
                         private_key: &str,
+                        chain_id : &u8,
                         gas_limit: EU256) -> Result<(Address), String> {
     let contract_abi = Asset::get("PriceOracle.abi").unwrap();
     info!(logger, "{:?}", std::str::from_utf8(contract_abi.as_ref()));
@@ -83,7 +90,7 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
     };
 
     let pk = pvt_key_from_slice(hex::decode(private_key.as_bytes()).unwrap().as_slice()).unwrap();
-    let tx = tx_request.sign(&pk.into(), &3.into());
+    let tx = tx_request.sign(&pk.into(), chain_id);
 
     let result =
         eth_client.send_raw_transaction_with_confirmation(tx.into(),Duration::from_secs(1), 1);
