@@ -105,6 +105,12 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .env("PO_ETHEREUM_GAS_LIMIT")
                         .long("gas_limit")
                         .help("gas limit for tx"),
+                )
+                .arg(
+                    Arg::with_name("chain_id")
+                        .env("PO_ETHEREUM_CHAIN_ID")
+                        .long("chain_id")
+                        .help("chain id for sign tx"),
                 ),
         )
         .subcommand(
