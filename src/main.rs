@@ -156,6 +156,12 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .env("PO_ETHEREUM_PRIVATE_KEY")
                         .long("private_key")
                         .help("private key for tx signing"),
+                )
+                .arg(
+                    Arg::with_name("chain_id")
+                        .env("PO_ETHEREUM_CHAIN_ID")
+                        .long("chain_id")
+                        .help("chain id for sign tx"),
                 ),
 
         ).get_matches()

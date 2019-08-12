@@ -67,6 +67,15 @@ pub fn keccak256_hash(bytes: &[u8]) -> Vec<u8> {
     keccak256(bytes).into_iter().cloned().collect()
 }
 
+pub fn pvt_key_from_slice(key: &[u8]) -> Option<H256> {
+    if key.len() != 32 {
+        return None
+    }
+    let mut h = H256::zero();
+    h.as_bytes_mut().copy_from_slice(&key[0..32]);
+    Some(h)
+}
+
 fn ecdsa_sign(hash: &[u8], private_key: &[u8], chain_id: &u8) -> EcdsaSig {
     let s = Secp256k1::new();
     let msg = Message::from_slice(hash).unwrap();
