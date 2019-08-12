@@ -5,7 +5,7 @@ use web3::types::{U256, Address};
 use web3::transports::Http;
 use std::time::Duration;
 
-use ethereum_types::{H256, U256 as EU256};
+use ethereum_types::{U256 as EU256};
 
 #[derive(RustEmbed)]
 #[folder = "src/contract/"]
@@ -89,7 +89,7 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>,
         nonce: nonce_cnt,
     };
 
-    let pk = pvt_key_from_slice(hex::decode(private_key.as_bytes()).unwrap().as_slice()).unwrap();
+    let pk = ethtxsign::pvt_key_from_slice(hex::decode(private_key.as_bytes()).unwrap().as_slice()).unwrap();
     let tx = tx_request.sign(&pk.into(), chain_id);
 
     let result =
@@ -148,12 +148,5 @@ fn with_own_eth_node(eth_client: web3::Web3<Http>, logger: &slog::Logger, gas_li
     Ok(contract_address)
 }
 
-fn pvt_key_from_slice(key: &[u8]) -> Option<H256> {
-    if key.len() != 32 {
-        return None
-    }
-    let mut h = H256::zero();
-    h.as_bytes_mut().copy_from_slice(&key[0..32]);
-    Some(h)
-}
+
 

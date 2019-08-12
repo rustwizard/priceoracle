@@ -12,3 +12,4 @@ mod raw_transaction;
 
 pub use self::raw_transaction::RawTransaction;
 pub use self::raw_transaction::keccak256_hash;
+pub use self::raw_transaction::pvt_key_from_slice;
