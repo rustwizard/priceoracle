@@ -89,6 +89,13 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .help("mainnet or testnet"),
                 )
                 .arg(
+                    Arg::with_name("transport")
+                        .required(true)
+                        .env("PO_ETHEREUM_TRANSPORT")
+                        .long("transport")
+                        .help("ws or http"),
+                )
+                .arg(
                     Arg::with_name("from_addr")
                         .env("PO_ETHEREUM_FROM_ADDR")
                         .long("from_addr")
