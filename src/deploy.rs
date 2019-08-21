@@ -67,24 +67,17 @@ pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String>
 
     let web3 = web3::Web3::new(ethan);
 
-    let contract_address =  if from_addr.len() != 0 {
-        match with_existing_wallet(web3,
-                                   &logger,
-                                   from_addr,
-                                   private_key,
-                                   &chain_id.parse::<u8>().unwrap(),
-                                   ugas_limit) {
-            Err(e) => return Err(e.to_string()),
-            Ok(a) => a,
-        };
-    } else {
-        match with_own_eth_node(web3, &logger, ugas_limit) {
-            Err(e) => return Err(e.to_string()),
-            Ok(a) => a,
-        };
+    let contract_address =  match from_addr.len() {
+        0 => with_own_eth_node(web3, &logger, ugas_limit) ,
+        _ => with_existing_wallet(web3,
+                                  &logger,
+                                  from_addr,
+                                  private_key,
+                                  &chain_id.parse::<u8>().unwrap(),
+                                  ugas_limit),
     };
 
-    info!(logger,"contract address: {:?}", contract_address);
+    info!(logger,"contract address: {:?}", contract_address.unwrap());
 
     Ok(())
 }
