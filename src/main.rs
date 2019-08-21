@@ -44,7 +44,14 @@ fn run(matches: ArgMatches<'static>) -> Result<(), String> {
     info!(logger, "processing_started");
     match matches.subcommand() {
         ("server", Some(server_matches)) => server::run(logger, server_matches),
-        ("deploy", Some(deploy_matches)) => deploy::run(logger, deploy_matches),
+        ("deploy", Some(deploy_matches)) => {
+            let transport = deploy_matches.value_of("transport").unwrap();
+            if transport == "http" {
+                deploy::run_with_http(logger, deploy_matches)
+            } else {
+                deploy::run_with_ws(logger, deploy_matches)
+            }
+        },
         ("updateprice", Some(up_matches)) => updateprice::run(logger, up_matches),
         ("", None) => {
             error!(logger, "no subcommand was used");
@@ -87,6 +94,13 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .short("n")
                         .long("net")
                         .help("mainnet or testnet"),
+                )
+                .arg(
+                    Arg::with_name("transport")
+                        .required(true)
+                        .env("PO_ETHEREUM_TRANSPORT")
+                        .long("transport")
+                        .help("ws or http"),
                 )
                 .arg(
                     Arg::with_name("from_addr")
