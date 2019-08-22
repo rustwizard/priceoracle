@@ -4,7 +4,6 @@ use web3::futures::Future;
 use web3::types::{U256, Address};
 use std::time::Duration;
 
-use ethereum_types::{U256 as EU256};
 use web3::Transport;
 
 #[derive(RustEmbed)]
@@ -18,7 +17,7 @@ pub fn run_with_http(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Strin
     let private_key = arg.value_of("private_key").unwrap();
 
     let gas_limit = arg.value_of("gas_limit").unwrap();
-    let ugas_limit: EU256 = EU256::from_dec_str(gas_limit).unwrap();
+    let ugas_limit: U256 = U256::from_dec_str(gas_limit).unwrap();
     let chain_id = arg.value_of("chain_id").unwrap();
     info!(logger, "deploy called to the {} network with {}", net, from_addr);
 
@@ -50,7 +49,7 @@ pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String>
     let private_key = arg.value_of("private_key").unwrap();
 
     let gas_limit = arg.value_of("gas_limit").unwrap();
-    let ugas_limit: EU256 = EU256::from_dec_str(gas_limit).unwrap();
+    let ugas_limit: U256 = U256::from_dec_str(gas_limit).unwrap();
     let chain_id = arg.value_of("chain_id").unwrap();
     info!(logger, "deploy called to the {} network with {}", net, from_addr);
 
@@ -80,7 +79,7 @@ fn with_existing_wallet(eth_client: web3::Web3<impl Transport>,
                         from_addr: &str,
                         private_key: &str,
                         chain_id : &u8,
-                        gas_limit: EU256) -> Result<(Address), String> {
+                        gas_limit: U256) -> Result<(Address), String> {
     let contract_abi = Asset::get("PriceOracle.abi").unwrap();
     info!(logger, "{:?}", std::str::from_utf8(contract_abi.as_ref()));
 
@@ -131,7 +130,7 @@ fn with_existing_wallet(eth_client: web3::Web3<impl Transport>,
     Ok(receipt.contract_address.unwrap())
 }
 
-fn with_own_eth_node(eth_client: web3::Web3<impl Transport>, logger: &slog::Logger, gas_limit: EU256) -> Result<(Address), String> {
+fn with_own_eth_node(eth_client: web3::Web3<impl Transport>, logger: &slog::Logger, gas_limit: U256) -> Result<(Address), String> {
     let accounts = eth_client.eth().accounts().wait().unwrap();
 
     if accounts.len() == 0 {
@@ -172,6 +171,7 @@ fn with_own_eth_node(eth_client: web3::Web3<impl Transport>, logger: &slog::Logg
 
     Ok(contract_address)
 }
+
 
 
 
