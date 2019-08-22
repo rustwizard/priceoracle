@@ -1,10 +1,9 @@
 use clap::ArgMatches;
 use web3::contract::{Contract, Options};
 use web3::futures::Future;
-use web3::types::{U256, Address};
+use web3::types::{U256, Address, H256};
 use std::time::Duration;
 
-use ethereum_types::{U256 as EU256};
 use web3::Transport;
 
 #[derive(RustEmbed)]
@@ -12,30 +11,18 @@ use web3::Transport;
 struct Asset;
 
 pub fn run_with_http(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
-    let net = arg.value_of("net").unwrap();
-
-    let from_addr =  arg.value_of("from_addr").unwrap();
-    let private_key = arg.value_of("private_key").unwrap();
-
-    let gas_limit = arg.value_of("gas_limit").unwrap();
-    let ugas_limit: EU256 = EU256::from_dec_str(gas_limit).unwrap();
-    let chain_id = arg.value_of("chain_id").unwrap();
-    info!(logger, "deploy called to the {} network with {}", net, from_addr);
+    let config = Config::new(arg);
+    info!(logger, "deploy called to the {} network with {:?}", config.net, config.from_addr);
 
 
-    let (eloop,ethan) = web3::transports::Http::new(net).unwrap();
+    let (eloop,ethan) = web3::transports::Http::new(&config.net).unwrap();
     eloop.into_remote();
 
     let web3 = web3::Web3::new(ethan);
 
-    let contract_address =  match from_addr.len() {
-        0 => with_own_eth_node(web3, &logger, ugas_limit) ,
-        _ => with_existing_wallet(web3,
-                                  &logger,
-                                  from_addr,
-                                  private_key,
-                                  &chain_id.parse::<u8>().unwrap(),
-                                  ugas_limit),
+    let contract_address =  match config.from_addr {
+        None => with_own_eth_node(web3, &logger, config) ,
+        Some(_) => with_existing_wallet(web3, &logger, config),
     };
 
     info!(logger,"contract address: {:?}", contract_address);
@@ -44,30 +31,18 @@ pub fn run_with_http(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Strin
 }
 
 pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
-    let net = arg.value_of("net").unwrap();
-
-    let from_addr =  arg.value_of("from_addr").unwrap();
-    let private_key = arg.value_of("private_key").unwrap();
-
-    let gas_limit = arg.value_of("gas_limit").unwrap();
-    let ugas_limit: EU256 = EU256::from_dec_str(gas_limit).unwrap();
-    let chain_id = arg.value_of("chain_id").unwrap();
-    info!(logger, "deploy called to the {} network with {}", net, from_addr);
+    let config = Config::new(arg);
+    info!(logger, "deploy called to the {:?} network with {:?}", config.net, config.from_addr);
 
 
-    let (eloop,ethan) = web3::transports::WebSocket::new(net).unwrap();
+    let (eloop,ethan) = web3::transports::WebSocket::new(&config.net).unwrap();
     eloop.into_remote();
 
     let web3 = web3::Web3::new(ethan);
 
-    let contract_address =  match from_addr.len() {
-        0 => with_own_eth_node(web3, &logger, ugas_limit) ,
-        _ => with_existing_wallet(web3,
-                                  &logger,
-                                  from_addr,
-                                  private_key,
-                                  &chain_id.parse::<u8>().unwrap(),
-                                  ugas_limit),
+    let contract_address =  match config.from_addr {
+        None => with_own_eth_node(web3, &logger, config) ,
+        Some(_) => with_existing_wallet(web3, &logger, config),
     };
 
     info!(logger,"contract address: {:?}", contract_address.unwrap());
@@ -77,46 +52,32 @@ pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String>
 
 fn with_existing_wallet(eth_client: web3::Web3<impl Transport>,
                         logger: &slog::Logger,
-                        from_addr: &str,
-                        private_key: &str,
-                        chain_id : &u8,
-                        gas_limit: EU256) -> Result<(Address), String> {
-    let contract_abi = Asset::get("PriceOracle.abi").unwrap();
-    info!(logger, "{:?}", std::str::from_utf8(contract_abi.as_ref()));
-
-    let contract_bytecode = Asset::get("PriceOracle.bin").unwrap();
+                        conf: Config) -> Result<(Address), String> {
 
     let gas_price = match eth_client.eth().gas_price().wait() {
         Ok(gas_price) => gas_price,
         Err(e) => return Err(e.to_string()),
     };
 
-    info!(logger,"deploy contract from {} with suggested gas_price: {:?}",
-          from_addr, gas_price);
+    info!(logger,"deploy contract from {:?} with suggested gas_price: {:?}",
+          conf.from_addr, gas_price);
 
-    let data = hex::decode(contract_bytecode.as_ref());
 
-    let my_account: Address = match from_addr.parse() {
-        Ok(from_addr) => from_addr,
-        Err(e) => return Err(e.to_string()),
-    };
-
-    let nonce_cnt  = match eth_client.eth().transaction_count(my_account, None).wait() {
+    let nonce_cnt  = match eth_client.eth().transaction_count(conf.from_addr.unwrap(), None).wait() {
         Ok(nonce) => nonce,
         Err(e) => return Err(e.to_string()),
     };
 
     let tx_request = ethtxsign::RawTransaction {
         to: None,
-        gas: gas_limit.into(),
+        gas: conf.gas_limit,
         gas_price: gas_price.into(),
         value: 0.into(),
-        data: data.unwrap(),
+        data: conf.contract_bytecode,
         nonce: nonce_cnt,
     };
 
-    let pk = ethtxsign::pvt_key_from_slice(hex::decode(private_key.as_bytes()).unwrap().as_slice()).unwrap();
-    let tx = tx_request.sign(&pk.into(), chain_id);
+    let tx = tx_request.sign(&conf.pvt_key, &conf.chain_id);
 
     let result =
         eth_client.send_raw_transaction_with_confirmation(tx.into(),Duration::from_secs(1), 1);
@@ -131,7 +92,7 @@ fn with_existing_wallet(eth_client: web3::Web3<impl Transport>,
     Ok(receipt.contract_address.unwrap())
 }
 
-fn with_own_eth_node(eth_client: web3::Web3<impl Transport>, logger: &slog::Logger, gas_limit: EU256) -> Result<(Address), String> {
+fn with_own_eth_node(eth_client: web3::Web3<impl Transport>, logger: &slog::Logger, conf: Config) -> Result<(Address), String> {
     let accounts = eth_client.eth().accounts().wait().unwrap();
 
     if accounts.len() == 0 {
@@ -157,7 +118,7 @@ fn with_own_eth_node(eth_client: web3::Web3<impl Transport>, logger: &slog::Logg
         .options(Options::with(|opt| {
             opt.value = Some(0.into());
             opt.gas_price = Some(gas_price);
-            opt.gas = Some(gas_limit.into());
+            opt.gas = Some(conf.gas_limit);
         }))
         .execute(
             bc,
@@ -173,5 +134,41 @@ fn with_own_eth_node(eth_client: web3::Web3<impl Transport>, logger: &slog::Logg
     Ok(contract_address)
 }
 
+struct Config {
+    from_addr: Option<Address>,
+    pvt_key: H256,
+    gas_limit: U256,
+    contract_bytecode: Vec<u8>,
+    chain_id: u8,
+    net: String
+}
 
+impl Config {
+    fn new(arg: &ArgMatches) -> Self {
+        let net = arg.value_of("net").unwrap().to_string();
 
+        let my_account =  arg.value_of("from_addr").unwrap();
+        let fr: Address = my_account.parse().unwrap();
+
+        let pk = arg.value_of("private_key").unwrap();
+        let pvt_key = ethtxsign::pvt_key_from_slice(hex::decode(pk.as_bytes()).unwrap().as_slice()).unwrap();
+
+        let gl = arg.value_of("gas_limit").unwrap();
+        let gas_limit: U256 = U256::from_dec_str(gl).unwrap();
+
+        let cid = arg.value_of("chain_id").unwrap();
+        let chain_id = cid.parse::<u8>().unwrap();
+
+        let cb = Asset::get("PriceOracle.bin").unwrap();
+        let contract_bytecode = hex::decode(cb.as_ref()).unwrap();
+
+        Config{
+            from_addr: Some(fr),
+            pvt_key,
+            gas_limit,
+            contract_bytecode,
+            chain_id,
+            net
+        }
+    }
+}
