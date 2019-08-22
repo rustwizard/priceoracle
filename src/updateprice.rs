@@ -39,18 +39,11 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
 
     let price = U256::from_dec_str(newprice).unwrap();
 
-    let tx =  if from_addr.len() == 0 {
-        match with_own_eth_node(web3, contract_address, contract_abi.as_ref(),
-                               ugas_limit, price) {
-            Err(e) => return Err(e.to_string()),
-            Ok(tx) => tx,
-        };
-    } else {
-        match with_existing_wallet(web3, contract_address, from_addr,private_key,
-                                   &chain_id.parse::<u8>().unwrap(), ugas_limit, price) {
-            Err(e) => return Err(e.to_string()),
-            Ok(tx) => tx,
-        };
+    let tx =  match from_addr.len() {
+        0 => with_own_eth_node(web3, contract_address, contract_abi.as_ref(),
+                               ugas_limit, price),
+        _ => with_existing_wallet(web3, contract_address, from_addr, private_key,
+                         &chain_id.parse::<u8>().unwrap(), ugas_limit, price),
     };
 
 
