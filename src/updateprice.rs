@@ -2,15 +2,38 @@ use clap::ArgMatches;
 use web3::contract::{Contract, Options};
 use web3::types::{Address, U256, H256};
 use web3::futures::Future;
-use web3::transports::Http;
 use std::vec::Vec;
 use std::time::Duration;
+use web3::Transport;
 
 #[derive(RustEmbed)]
 #[folder = "src/contract/"]
 struct Asset;
 
-pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
+pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
+    let config = UpdateConfig::new(arg);
+
+    info!(logger, "updateprice called to the {} network with {} price and contractaddr {} and \
+                    gas_limit {}",
+          config.net, config.new_price, config.contract_addr.unwrap(), config.gas_limit);
+
+    let (eloop, http) = web3::transports::WebSocket::new(&config.net).unwrap();
+    eloop.into_remote();
+
+    let web3 = web3::Web3::new(http);
+
+    let tx = match config.from_addr {
+        None => with_own_eth_node(web3, config),
+        Some(_) => with_existing_wallet(web3, config),
+    };
+
+
+    info!(logger, "tx: {:?}", tx);
+
+    Ok(())
+}
+
+pub fn run_with_http(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let config = UpdateConfig::new(arg);
 
     info!(logger, "updateprice called to the {} network with {} price and contractaddr {} and \
@@ -33,7 +56,7 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     Ok(())
 }
 
-fn with_existing_wallet(eth_client: web3::Web3<Http>, conf: UpdateConfig) -> Result<(H256), String> {
+fn with_existing_wallet(eth_client: web3::Web3<impl Transport>, conf: UpdateConfig) -> Result<(H256), String> {
     let method_id = ethtxsign::keccak256_hash(b"updatePrice(uint256)");
     let update_price_abi = format!("{}{:064x}", &hex::encode(method_id)[..8],
                                    &conf.new_price.as_u64());
@@ -49,14 +72,14 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>, conf: UpdateConfig) -> Res
         Err(e) => return Err(e.to_string()),
     };
 
-    let data = hex::decode(update_price_abi.as_bytes());
+    let cdata = hex::decode(update_price_abi.as_bytes());
 
     let tx_request = ethtxsign::RawTransaction {
         to: conf.contract_addr,
         gas: conf.gas_limit,
         gas_price: gas_price.into(),
         value: 0.into(),
-        data: data.unwrap(),
+        data: cdata.unwrap(),
         nonce: nonce_cnt,
     };
 
@@ -73,7 +96,7 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>, conf: UpdateConfig) -> Res
     Ok(receipt.transaction_hash)
 }
 
-fn with_own_eth_node(eth_client: web3::Web3<Http>, conf: UpdateConfig) -> Result<(H256), String> {
+fn with_own_eth_node(eth_client: web3::Web3<impl Transport>, conf: UpdateConfig) -> Result<(H256), String> {
     let contract = Contract::from_json(
         eth_client.eth(),
         conf.contract_addr.unwrap(),
@@ -117,7 +140,6 @@ struct UpdateConfig {
     new_price: U256,
     pvt_key: H256,
     gas_limit: U256,
-    contract_bytecode: Vec<u8>,
     contract_abi: Vec<u8>,
     chain_id: u8,
     net: String,
@@ -145,9 +167,6 @@ impl UpdateConfig {
         let cid = arg.value_of("chain_id").unwrap();
         let chain_id = cid.parse::<u8>().unwrap();
 
-        let cb = Asset::get("PriceOracle.bin").unwrap();
-        let contract_bytecode = hex::decode(cb.as_ref()).unwrap();
-
         let cabi = Asset::get("PriceOracle.abi").unwrap();
         let contract_abi = cabi.as_ref().to_vec();
 
@@ -157,7 +176,6 @@ impl UpdateConfig {
             new_price,
             pvt_key,
             gas_limit,
-            contract_bytecode,
             contract_abi,
             chain_id,
             net,

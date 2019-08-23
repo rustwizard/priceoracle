@@ -10,6 +10,7 @@ use slog::Drain;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 use std::process;
+
 mod server;
 mod deploy;
 mod updateprice;
@@ -51,8 +52,15 @@ fn run(matches: ArgMatches<'static>) -> Result<(), String> {
             } else {
                 deploy::run_with_ws(logger, deploy_matches)
             }
-        },
-        ("updateprice", Some(up_matches)) => updateprice::run(logger, up_matches),
+        }
+        ("updateprice", Some(up_matches)) => {
+            let transport = up_matches.value_of("transport").unwrap();
+            if transport == "http" {
+                updateprice::run_with_http(logger, up_matches)
+            } else {
+                updateprice::run_with_ws(logger, up_matches)
+            }
+        }
         ("", None) => {
             error!(logger, "no subcommand was used");
             Ok(())
@@ -138,6 +146,13 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .help("mainnet or testnet"),
                 )
                 .arg(
+                    Arg::with_name("transport")
+                        .required(true)
+                        .env("PO_ETHEREUM_TRANSPORT")
+                        .long("transport")
+                        .help("ws or http"),
+                )
+                .arg(
                     Arg::with_name("newprice")
                         .required(true)
                         .takes_value(true)
@@ -177,6 +192,5 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .long("chain_id")
                         .help("chain id for sign tx"),
                 ),
-
         ).get_matches()
 }
