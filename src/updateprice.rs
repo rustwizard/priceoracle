@@ -49,12 +49,14 @@ fn with_existing_wallet(eth_client: web3::Web3<Http>, conf: UpdateConfig) -> Res
         Err(e) => return Err(e.to_string()),
     };
 
+    let data = hex::decode(update_price_abi.as_bytes());
+
     let tx_request = ethtxsign::RawTransaction {
         to: conf.contract_addr,
         gas: conf.gas_limit,
         gas_price: gas_price.into(),
         value: 0.into(),
-        data: conf.contract_bytecode,
+        data: data.unwrap(),
         nonce: nonce_cnt,
     };
 
