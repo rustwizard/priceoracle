@@ -1,9 +1,10 @@
+use crate::web3util;
 use clap::ArgMatches;
-use web3::contract::{Contract, Options};
-use web3::types::{Address, U256, H256};
-use web3::futures::Future;
-use std::vec::Vec;
 use std::time::Duration;
+use std::vec::Vec;
+use web3::contract::{Contract, Options};
+use web3::futures::Future;
+use web3::types::{Address, H256, U256};
 use web3::Transport;
 
 #[derive(RustEmbed)]
@@ -13,9 +14,15 @@ struct Asset;
 pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let config = UpdateConfig::new(arg);
 
-    info!(logger, "updateprice called to the {} network with {} price and contractaddr {} and \
-                    gas_limit {}",
-          config.net, config.new_price, config.contract_addr.unwrap(), config.gas_limit);
+    info!(
+        logger,
+        "updateprice called to the {} network with {} price and contractaddr {} and \
+         gas_limit {}",
+        config.net,
+        config.new_price,
+        config.contract_addr.unwrap(),
+        config.gas_limit
+    );
 
     let (eloop, http) = web3::transports::WebSocket::new(&config.net).unwrap();
     eloop.into_remote();
@@ -27,7 +34,6 @@ pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String>
         Some(_) => with_existing_wallet(web3, config),
     };
 
-
     info!(logger, "tx: {:?}", tx);
 
     Ok(())
@@ -36,9 +42,15 @@ pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String>
 pub fn run_with_http(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
     let config = UpdateConfig::new(arg);
 
-    info!(logger, "updateprice called to the {} network with {} price and contractaddr {} and \
-                    gas_limit {}",
-          config.net, config.new_price, config.contract_addr.unwrap(), config.gas_limit);
+    info!(
+        logger,
+        "updateprice called to the {} network with {} price and contractaddr {} and \
+         gas_limit {}",
+        config.net,
+        config.new_price,
+        config.contract_addr.unwrap(),
+        config.gas_limit
+    );
 
     let (eloop, http) = web3::transports::Http::new(&config.net).unwrap();
     eloop.into_remote();
@@ -50,22 +62,24 @@ pub fn run_with_http(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Strin
         Some(_) => with_existing_wallet(web3, config),
     };
 
-
     info!(logger, "tx: {:?}", tx);
 
     Ok(())
 }
 
-fn with_existing_wallet(eth_client: web3::Web3<impl Transport>, conf: UpdateConfig) -> Result<(H256), String> {
+fn with_existing_wallet(
+    eth_client: web3::Web3<impl Transport>,
+    conf: UpdateConfig,
+) -> Result<(H256), String> {
     let method_id = ethtxsign::keccak256_hash(b"updatePrice(uint256)");
-    let update_price_abi = format!("{}{:064x}", &hex::encode(method_id)[..8],
-                                   &conf.new_price.as_u64());
+    let update_price_abi = format!(
+        "{}{:064x}",
+        &hex::encode(method_id)[..8],
+        &conf.new_price.as_u64()
+    );
     println!("update_price_abi {}", update_price_abi);
 
-    let nonce_cnt = match eth_client.eth().transaction_count(conf.from_addr.unwrap(), None).wait() {
-        Ok(nonce) => nonce,
-        Err(e) => return Err(e.to_string()),
-    };
+    let nonce_cnt = web3util::nonce(conf.from_addr.unwrap(), &eth_client).unwrap();
 
     let gas_price = match eth_client.eth().gas_price().wait() {
         Ok(gas_price) => gas_price,
@@ -96,12 +110,16 @@ fn with_existing_wallet(eth_client: web3::Web3<impl Transport>, conf: UpdateConf
     Ok(receipt.transaction_hash)
 }
 
-fn with_own_eth_node(eth_client: web3::Web3<impl Transport>, conf: UpdateConfig) -> Result<(H256), String> {
+fn with_own_eth_node(
+    eth_client: web3::Web3<impl Transport>,
+    conf: UpdateConfig,
+) -> Result<(H256), String> {
     let contract = Contract::from_json(
         eth_client.eth(),
         conf.contract_addr.unwrap(),
         conf.contract_abi.as_slice(),
-    ).unwrap();
+    )
+    .unwrap();
 
     let accounts = eth_client.eth().accounts().wait().unwrap();
 
@@ -126,8 +144,12 @@ fn with_own_eth_node(eth_client: web3::Web3<impl Transport>, conf: UpdateConfig)
         Options::default()
     };
 
-    let result
-        = contract.call("updatePrice", (conf.new_price, ), accounts[0].into(), options.into());
+    let result = contract.call(
+        "updatePrice",
+        (conf.new_price,),
+        accounts[0].into(),
+        options.into(),
+    );
 
     let tx = result.wait().unwrap();
 
@@ -159,7 +181,8 @@ impl UpdateConfig {
         let new_price = U256::from_dec_str(np).unwrap();
 
         let pk = arg.value_of("private_key").unwrap();
-        let pvt_key = ethtxsign::pvt_key_from_slice(hex::decode(pk.as_bytes()).unwrap().as_slice()).unwrap();
+        let pvt_key =
+            ethtxsign::pvt_key_from_slice(hex::decode(pk.as_bytes()).unwrap().as_slice()).unwrap();
 
         let gl = arg.value_of("gas_limit").unwrap();
         let gas_limit: U256 = U256::from_dec_str(gl).unwrap();
