@@ -11,9 +11,10 @@ use slog::Drain;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use std::process;
 
-mod server;
 mod deploy;
+mod server;
 mod updateprice;
+mod web3util;
 
 fn main() {
     let matches = build_app_get_matches();
@@ -192,5 +193,6 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .long("chain_id")
                         .help("chain id for sign tx"),
                 ),
-        ).get_matches()
+        )
+        .get_matches()
 }
