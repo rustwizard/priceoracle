@@ -15,6 +15,7 @@ mod deploy;
 mod server;
 mod updateprice;
 mod web3util;
+mod eventread;
 
 fn main() {
     let matches = build_app_get_matches();
