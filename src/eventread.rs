@@ -29,7 +29,7 @@ struct Config {
     contract_addr: Option<Address>,
     contract_abi: Vec<u8>,
     net: String,
-    block_num: i64,
+    block_num: u64,
 }
 
 impl Config {
@@ -44,7 +44,7 @@ impl Config {
         let cabi = Asset::get("PriceOracle.abi").unwrap();
         let contract_abi = cabi.as_ref().to_vec();
 
-        let block_num: i64 = arg.value_of("blocknum").unwrap().parse().unwrap();
+        let block_num: u64 = arg.value_of("blocknum").unwrap().parse().unwrap();
 
         Config {
             contract_addr: Some(contract_address),
