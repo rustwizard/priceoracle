@@ -44,11 +44,13 @@ impl Config {
         let cabi = Asset::get("PriceOracle.abi").unwrap();
         let contract_abi = cabi.as_ref().to_vec();
 
+        let block_num: i64 = arg.value_of("blocknum").unwrap().parse().unwrap();
+
         Config {
             contract_addr: Some(contract_address),
             contract_abi,
             net,
-            block_num: 0
+            block_num,
         }
     }
 }
