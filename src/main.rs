@@ -168,7 +168,7 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .env("PO_CONTRACT_ADDRESS")
                         .short("ca")
                         .long("contractaddr")
-                        .help("address of the contract int the Ethereum network"),
+                        .help("address of the contract in the Ethereum network"),
                 )
                 .arg(
                     Arg::with_name("gas_limit")
@@ -217,7 +217,15 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                     .env("PO_CONTRACT_ADDRESS")
                     .short("ca")
                     .long("contractaddr")
-                    .help("address of the contract int the Ethereum network"),
+                    .help("address of the contract in the Ethereum network"),
+            )
+            .arg(
+            Arg::with_name("blocknum")
+                .required(true)
+                .env("PO_ETHEREUM_BLOCKNUM")
+                .short("bn")
+                .long("blocknum")
+                .help(" blocknum from which we start parsing ethereum logs"),
             ),
     ).get_matches()
 }
