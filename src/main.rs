@@ -64,12 +64,7 @@ fn run(matches: ArgMatches<'static>) -> Result<(), String> {
             }
         }
         ("eventread", Some(ev_matches)) => {
-            let transport = ev_matches.value_of("transport").unwrap();
-            if transport == "http" {
-                eventread::run_with_http(logger, ev_matches)
-            } else {
-                eventread::run_with_ws(logger, ev_matches)
-            }
+            eventread::run_with_ws(logger, ev_matches)
         }
         ("", None) => {
             error!(logger, "no subcommand was used");
@@ -211,13 +206,6 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                     .env("PO_ETHEREUM_NETWORK")
                     .long("net")
                     .help("mainnet or testnet"),
-            )
-            .arg(
-                Arg::with_name("transport")
-                    .required(true)
-                    .env("PO_ETHEREUM_TRANSPORT")
-                    .long("transport")
-                    .help("ws or http"),
             )
             .arg(
                 Arg::with_name("contractaddr")
