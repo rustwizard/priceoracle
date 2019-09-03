@@ -63,6 +63,14 @@ fn run(matches: ArgMatches<'static>) -> Result<(), String> {
                 updateprice::run_with_ws(logger, up_matches)
             }
         }
+        ("eventread", Some(ev_matches)) => {
+            let transport = ev_matches.value_of("transport").unwrap();
+            if transport == "http" {
+                eventread::run_with_http(logger, ev_matches)
+            } else {
+                eventread::run_with_ws(logger, ev_matches)
+            }
+        }
         ("", None) => {
             error!(logger, "no subcommand was used");
             Ok(())
