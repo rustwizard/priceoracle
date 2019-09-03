@@ -15,10 +15,10 @@ pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String>
         config.contract_addr.unwrap(),
     );
 
-    let (eloop, http) = web3::transports::WebSocket::new(&config.net).unwrap();
+    let (eloop, ws) = web3::transports::WebSocket::new(&config.net).unwrap();
     eloop.into_remote();
 
-    let _ = web3::Web3::new(http);
+    let _ = web3::Web3::new(ws);
 
 
 
