@@ -10,8 +10,6 @@ pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String>
     let web3 =
         web3::Web3::new(web3::transports::WebSocket::with_event_loop(&config.net, &eloop.handle()).unwrap());
 
-    //let (eloop, ws) = web3::transports::WebSocket::new(&config.net).unwrap();
-
     let topic = web3util::h256_topic(ethtxsign::keccak256_hash("PriceChanged(uint256)".as_ref()));
 
 
