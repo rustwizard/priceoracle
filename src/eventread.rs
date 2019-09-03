@@ -38,7 +38,7 @@ pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String>
                 sub.unwrap().for_each(|log| {
                     info!(logger, "got event: {:?}", log);
                     Ok(())
-                })
+                }).map_err(|_|())
             })
 
     ).unwrap();
