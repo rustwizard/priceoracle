@@ -15,6 +15,7 @@ mod deploy;
 mod server;
 mod updateprice;
 mod web3util;
+mod eventread;
 
 fn main() {
     let matches = build_app_get_matches();
@@ -61,6 +62,9 @@ fn run(matches: ArgMatches<'static>) -> Result<(), String> {
             } else {
                 updateprice::run_with_ws(logger, up_matches)
             }
+        }
+        ("eventread", Some(ev_matches)) => {
+            eventread::run_with_ws(logger, ev_matches)
         }
         ("", None) => {
             error!(logger, "no subcommand was used");
@@ -167,7 +171,7 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .env("PO_CONTRACT_ADDRESS")
                         .short("ca")
                         .long("contractaddr")
-                        .help("address of the contract int the Ethereum network"),
+                        .help("address of the contract in the Ethereum network"),
                 )
                 .arg(
                     Arg::with_name("gas_limit")
@@ -193,6 +197,31 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .long("chain_id")
                         .help("chain id for sign tx"),
                 ),
-        )
-        .get_matches()
+        ).subcommand(
+        SubCommand::with_name("eventread")
+            .about("read contract events")
+            .arg(
+                Arg::with_name("net")
+                    .required(true)
+                    .env("PO_ETHEREUM_NETWORK")
+                    .long("net")
+                    .help("mainnet or testnet"),
+            )
+            .arg(
+                Arg::with_name("contractaddr")
+                    .required(true)
+                    .env("PO_CONTRACT_ADDRESS")
+                    .short("ca")
+                    .long("contractaddr")
+                    .help("address of the contract in the Ethereum network"),
+            )
+            .arg(
+            Arg::with_name("blocknum")
+                .required(true)
+                .env("PO_ETHEREUM_BLOCKNUM")
+                .short("bn")
+                .long("blocknum")
+                .help(" blocknum from which we start parsing ethereum logs"),
+            ),
+    ).get_matches()
 }
