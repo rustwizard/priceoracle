@@ -2,6 +2,7 @@ use clap::ArgMatches;
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Server, StatusCode};
+use std::net::ToSocketAddrs;
 
 async fn routes(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     match (req.method(), req.uri().path()) {
@@ -16,12 +17,17 @@ async fn routes(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     }
 }
 
-pub async fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
+pub async fn run(
+    logger: slog::Logger,
+    arg: &ArgMatches<'_>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let bind = arg.value_of("bind").unwrap();
     let service = make_service_fn(|_| async { Ok::<_, hyper::Error>(service_fn(routes)) });
 
-    let server = Server::bind(bind.unwrap()).serve(service);
+    let mut addrs_iter = bind.to_socket_addrs().unwrap();
+    let server = Server::bind(addrs_iter.next().as_ref().unwrap()).serve(service);
     info!(logger, "listening on http://{}", bind);
     server.await?;
+
     Ok(())
 }
