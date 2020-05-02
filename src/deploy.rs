@@ -5,13 +5,17 @@ use web3::futures::Future;
 use web3::types::{Address, H256, U256};
 
 use crate::web3util;
+use std::convert::TryFrom;
 use web3::Transport;
 
 #[derive(RustEmbed)]
 #[folder = "src/contract/"]
 struct Asset;
 
-pub fn run_with_http(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
+pub fn run_with_http(
+    logger: slog::Logger,
+    arg: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::new(arg);
     info!(
         logger,
@@ -33,7 +37,10 @@ pub fn run_with_http(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Strin
     Ok(())
 }
 
-pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
+pub fn run_with_ws(
+    logger: slog::Logger,
+    arg: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::new(arg);
     info!(
         logger,
@@ -59,10 +66,10 @@ fn with_existing_wallet(
     eth_client: web3::Web3<impl Transport>,
     logger: &slog::Logger,
     conf: Config,
-) -> Result<(Address), String> {
+) -> Result<Address, Box<dyn std::error::Error>> {
     let gas_price = match eth_client.eth().gas_price().wait() {
         Ok(gas_price) => gas_price,
-        Err(e) => return Err(e.to_string()),
+        Err(e) => return Err(Box::try_from(e).unwrap()),
     };
 
     info!(
@@ -88,7 +95,7 @@ fn with_existing_wallet(
 
     let receipt = match result.wait() {
         Ok(receipt) => receipt,
-        Err(e) => return Err(e.to_string()),
+        Err(e) => return Err(Box::try_from(e).unwrap()),
     };
 
     info!(logger, "tx {} created", receipt.transaction_hash);
@@ -100,11 +107,13 @@ fn with_own_eth_node(
     eth_client: web3::Web3<impl Transport>,
     logger: &slog::Logger,
     conf: Config,
-) -> Result<(Address), String> {
+) -> Result<Address, Box<dyn std::error::Error>> {
     let accounts = eth_client.eth().accounts().wait().unwrap();
 
     if accounts.len() == 0 {
-        return Err(String::from("there is no any accounts for contract deploy"));
+        return Err(
+            Box::try_from(String::from("there is no any accounts for contract deploy")).unwrap(),
+        );
     }
 
     let contract_abi = Asset::get("PriceOracle.abi").unwrap();

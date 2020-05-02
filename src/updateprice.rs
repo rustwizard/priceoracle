@@ -1,5 +1,6 @@
 use crate::web3util;
 use clap::ArgMatches;
+use std::convert::TryFrom;
 use std::time::Duration;
 use std::vec::Vec;
 use web3::contract::{Contract, Options};
@@ -11,7 +12,10 @@ use web3::Transport;
 #[folder = "src/contract/"]
 struct Asset;
 
-pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
+pub fn run_with_ws(
+    logger: slog::Logger,
+    arg: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
     let config = UpdateConfig::new(arg);
 
     info!(
@@ -39,7 +43,10 @@ pub fn run_with_ws(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String>
     Ok(())
 }
 
-pub fn run_with_http(logger: slog::Logger, arg: &ArgMatches) -> Result<(), String> {
+pub fn run_with_http(
+    logger: slog::Logger,
+    arg: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
     let config = UpdateConfig::new(arg);
 
     info!(
@@ -70,7 +77,7 @@ pub fn run_with_http(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Strin
 fn with_existing_wallet(
     eth_client: web3::Web3<impl Transport>,
     conf: UpdateConfig,
-) -> Result<(H256), String> {
+) -> Result<H256, Box<dyn std::error::Error>> {
     let method_id = ethtxsign::keccak256_hash(b"updatePrice(uint256)");
     let update_price_abi = format!(
         "{}{:064x}",
@@ -83,7 +90,7 @@ fn with_existing_wallet(
 
     let gas_price = match eth_client.eth().gas_price().wait() {
         Ok(gas_price) => gas_price,
-        Err(e) => return Err(e.to_string()),
+        Err(e) => return Err(Box::try_from(e).unwrap()),
     };
 
     let cdata = hex::decode(update_price_abi.as_bytes());
@@ -104,7 +111,7 @@ fn with_existing_wallet(
 
     let receipt = match result.wait() {
         Ok(receipt) => receipt,
-        Err(e) => return Err(e.to_string()),
+        Err(e) => return Err(Box::try_from(e).unwrap()),
     };
 
     Ok(receipt.transaction_hash)
@@ -113,7 +120,7 @@ fn with_existing_wallet(
 fn with_own_eth_node(
     eth_client: web3::Web3<impl Transport>,
     conf: UpdateConfig,
-) -> Result<(H256), String> {
+) -> Result<H256, Box<dyn std::error::Error>> {
     let contract = Contract::from_json(
         eth_client.eth(),
         conf.contract_addr.unwrap(),
@@ -124,13 +131,15 @@ fn with_own_eth_node(
     let accounts = eth_client.eth().accounts().wait().unwrap();
 
     if accounts.len() == 0 {
-        return Err(String::from("there is no any accounts for contract deploy"));
+        return Err(
+            Box::try_from(String::from("there is no any accounts for contract deploy")).unwrap(),
+        );
     }
 
     let options = if conf.gas_limit.ne(&U256::zero()) {
         let gas_price = match eth_client.eth().gas_price().wait() {
             Ok(gas_price) => gas_price,
-            Err(e) => return Err(e.to_string()),
+            Err(e) => return Err(Box::try_from(e).unwrap()),
         };
 
         Options {

@@ -1,9 +1,9 @@
 use ethereum_types::{H160, H256, U256};
 use rlp::RlpStream;
-use tiny_keccak::keccak256;
 use secp256k1::key::SecretKey;
 use secp256k1::Message;
 use secp256k1::Secp256k1;
+use tiny_keccak::keccak256;
 
 /// Description of a Transaction, pending or in the chain.
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -20,26 +20,26 @@ pub struct RawTransaction {
     /// Gas amount
     pub gas: U256,
     /// Input data
-    pub data: Vec<u8>
+    pub data: Vec<u8>,
 }
 
 impl RawTransaction {
     /// Signs and returns the RLP-encoded transaction
-    pub fn sign(&self, private_key: &H256, chain_id : &u8) -> Vec<u8> {
+    pub fn sign(&self, private_key: &H256, chain_id: &u8) -> Vec<u8> {
         let hash = self.hash(*chain_id);
         let sig = ecdsa_sign(&hash, &private_key.0, &chain_id);
-        let mut tx = RlpStream::new(); 
+        let mut tx = RlpStream::new();
         tx.begin_unbounded_list();
         self.encode(&mut tx);
-        tx.append(&sig.v); 
-        tx.append(&sig.r); 
-        tx.append(&sig.s); 
+        tx.append(&sig.v);
+        tx.append(&sig.r);
+        tx.append(&sig.s);
         tx.complete_unbounded_list();
         tx.out()
     }
 
     fn hash(&self, chain_id: u8) -> Vec<u8> {
-        let mut hash = RlpStream::new(); 
+        let mut hash = RlpStream::new();
         hash.begin_unbounded_list();
         self.encode(&mut hash);
         hash.append(&mut vec![chain_id]);
@@ -64,12 +64,12 @@ impl RawTransaction {
 }
 
 pub fn keccak256_hash(bytes: &[u8]) -> Vec<u8> {
-    keccak256(bytes).into_iter().cloned().collect()
+    keccak256(bytes).to_vec()
 }
 
 pub fn pvt_key_from_slice(key: &[u8]) -> Option<H256> {
     if key.len() != 32 {
-        return None
+        return None;
     }
     let mut h = H256::zero();
     h.as_bytes_mut().copy_from_slice(&key[0..32]);
@@ -82,7 +82,7 @@ fn ecdsa_sign(hash: &[u8], private_key: &[u8], chain_id: &u8) -> EcdsaSig {
     let key = SecretKey::from_slice(&s, private_key).unwrap();
     let result = s.sign_recoverable(&msg, &key);
     let recoverable_sig = result.unwrap();
-    let(recovery_id, sig_bytes) = recoverable_sig.serialize_compact(&s);
+    let (recovery_id, sig_bytes) = recoverable_sig.serialize_compact(&s);
     EcdsaSig {
         v: vec![recovery_id.to_i32() as u8 + chain_id * 2 + 35],
         r: sig_bytes[0..32].to_vec(),
@@ -93,5 +93,5 @@ fn ecdsa_sign(hash: &[u8], private_key: &[u8], chain_id: &u8) -> EcdsaSig {
 pub struct EcdsaSig {
     v: Vec<u8>,
     r: Vec<u8>,
-    s: Vec<u8>
+    s: Vec<u8>,
 }

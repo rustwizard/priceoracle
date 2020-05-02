@@ -15,16 +15,6 @@ RUN apt-get update && \
 
 WORKDIR /usr/src/priceoracle
 
-COPY Cargo.toml Cargo.toml
-
-RUN mkdir src/
-
-RUN echo "fn main() {println!(\"if you see this, the build broke\")}" > src/main.rs
-
-RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl
-
-RUN rm -f target/x86_64-unknown-linux-musl/release/deps/priceoracle*
-
 COPY . .
 
 COPY --from=solidity-compiler /root/PriceOracle.* ./src/contract/

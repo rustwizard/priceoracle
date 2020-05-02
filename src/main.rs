@@ -12,10 +12,10 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use std::process;
 
 mod deploy;
+mod eventread;
 mod server;
 mod updateprice;
 mod web3util;
-mod eventread;
 
 fn main() {
     let matches = build_app_get_matches();
@@ -26,7 +26,7 @@ fn main() {
     }
 }
 
-fn run(matches: ArgMatches<'static>) -> Result<(), String> {
+fn run(matches: ArgMatches<'static>) -> Result<(), Box<dyn std::error::Error>> {
     let min_log_level = match matches.occurrences_of("verbose") {
         0 => slog::Level::Info,
         1 => slog::Level::Debug,
@@ -63,9 +63,7 @@ fn run(matches: ArgMatches<'static>) -> Result<(), String> {
                 updateprice::run_with_ws(logger, up_matches)
             }
         }
-        ("eventread", Some(ev_matches)) => {
-            eventread::run_with_ws(logger, ev_matches)
-        }
+        ("eventread", Some(ev_matches)) => eventread::run_with_ws(logger, ev_matches),
         ("", None) => {
             error!(logger, "no subcommand was used");
             Ok(())
@@ -197,31 +195,33 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .long("chain_id")
                         .help("chain id for sign tx"),
                 ),
-        ).subcommand(
-        SubCommand::with_name("eventread")
-            .about("read contract events")
-            .arg(
-                Arg::with_name("net")
-                    .required(true)
-                    .env("PO_ETHEREUM_NETWORK")
-                    .long("net")
-                    .help("mainnet or testnet"),
-            )
-            .arg(
-                Arg::with_name("contractaddr")
-                    .required(true)
-                    .env("PO_CONTRACT_ADDRESS")
-                    .short("ca")
-                    .long("contractaddr")
-                    .help("address of the contract in the Ethereum network"),
-            )
-            .arg(
-            Arg::with_name("blocknum")
-                .required(true)
-                .env("PO_ETHEREUM_BLOCKNUM")
-                .short("bn")
-                .long("blocknum")
-                .help(" blocknum from which we start parsing ethereum logs"),
-            ),
-    ).get_matches()
+        )
+        .subcommand(
+            SubCommand::with_name("eventread")
+                .about("read contract events")
+                .arg(
+                    Arg::with_name("net")
+                        .required(true)
+                        .env("PO_ETHEREUM_NETWORK")
+                        .long("net")
+                        .help("mainnet or testnet"),
+                )
+                .arg(
+                    Arg::with_name("contractaddr")
+                        .required(true)
+                        .env("PO_CONTRACT_ADDRESS")
+                        .short("ca")
+                        .long("contractaddr")
+                        .help("address of the contract in the Ethereum network"),
+                )
+                .arg(
+                    Arg::with_name("blocknum")
+                        .required(true)
+                        .env("PO_ETHEREUM_BLOCKNUM")
+                        .short("bn")
+                        .long("blocknum")
+                        .help(" blocknum from which we start parsing ethereum logs"),
+                ),
+        )
+        .get_matches()
 }
