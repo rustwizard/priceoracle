@@ -17,6 +17,7 @@ async fn routes(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     }
 }
 
+#[tokio::main]
 pub async fn run(
     logger: slog::Logger,
     arg: &ArgMatches<'_>,
