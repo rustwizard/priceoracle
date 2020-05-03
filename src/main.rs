@@ -14,6 +14,7 @@ use std::process;
 mod deploy;
 mod eventread;
 mod server;
+mod service;
 mod updateprice;
 mod web3util;
 
@@ -47,6 +48,7 @@ fn run(matches: ArgMatches<'static>) -> Result<(), Box<dyn std::error::Error>> {
     info!(logger, "processing_started");
     match matches.subcommand() {
         ("server", Some(server_matches)) => server::run(logger, server_matches),
+        ("service", Some(service_matches)) => service::run(logger, service_matches),
         ("deploy", Some(deploy_matches)) => {
             let transport = deploy_matches.value_of("transport").unwrap();
             if transport == "http" {
@@ -93,6 +95,24 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .short("b")
                         .long("bind")
                         .help("address:port"),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("service")
+                .about("starts dapp service")
+                .arg(
+                    Arg::with_name("api_endpoint")
+                        .required(true)
+                        .env("PO_SERVICE_API_ENDPOINT")
+                        .long("api_endpoint")
+                        .help("api endpoint"),
+                )
+                .arg(
+                    Arg::with_name("api_key")
+                        .required(true)
+                        .env("PO_SERVICE_API_KEY")
+                        .long("api_key")
+                        .help("api key from api endpoint"),
                 ),
         )
         .subcommand(
