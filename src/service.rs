@@ -4,9 +4,8 @@ pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Box<dyn std::er
     let config = Config::new(arg);
     info!(
         logger,
-        "service called to the {} endpoint with the {:?} api key",
-        config.api_endpoint.unwrap(),
-        config.api_key.unwrap()
+        "service called to the {}",
+        make_url(config.api_endpoint.unwrap(), config.api_key.unwrap()).unwrap()
     );
     Ok(())
 }
@@ -26,4 +25,10 @@ impl Config {
             api_key: Some(api_key),
         }
     }
+}
+
+fn make_url(api_endpoint: String, api_key: String) -> Option<String> {
+    let mut url = api_endpoint + "/data/price?fsym=BTC&tsyms=USD,ETH";
+    url = url + "&api_key=" + api_key.as_ref();
+    Some(url)
 }
