@@ -13,6 +13,7 @@ slog = "2.5.0"
 slog-term = "2.4.1"
 slog-async = "2.3.0"
 hyper = "0.13"
+hyper-tls = "0.4.1"
 rust-embed = "5.1.0"
 web3 = "0.8.0"
 ethtxsign = { path = "src/ethtxsign/" }
