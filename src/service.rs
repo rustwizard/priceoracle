@@ -1,13 +1,16 @@
-use clap::ArgMatches;
-use hyper::{Body, Client, Request};
-use hyper_tls::HttpsConnector;
+use serde::Deserialize;
 
-pub fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+use clap::ArgMatches;
+use hyper::body::Buf;
+use hyper::Client;
+
+#[tokio::main]
+pub async fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::new(arg);
     let url = make_url(config.api_endpoint.unwrap(), config.api_key.unwrap()).unwrap();
     info!(logger, "service called to the {}", url);
-
-    return send_request(url);
+    let pair = fetch_json(url.as_str().parse().unwrap()).await?;
+    Ok(())
 }
 
 struct Config {
@@ -33,12 +36,21 @@ fn make_url(api_endpoint: String, api_key: String) -> Option<String> {
     Some(url)
 }
 
-#[tokio::main]
-async fn send_request(url: String) -> Result<(), Box<dyn std::error::Error>> {
-    let req = Request::builder().uri(url).body(Body::empty()).unwrap();
-    let https = HttpsConnector::new();
-    let client = Client::builder().build::<_, hyper::Body>(https);
-    let resp = client.request(req).await?;
+async fn fetch_json(url: hyper::Uri) -> Result<CurrencyPair, Box<dyn std::error::Error>> {
+    let client = Client::new();
+
+    // Fetch the url...
+    let resp = client.get(url).await?;
     println!("Response: {}", resp.status());
-    Ok(())
+
+    // asynchronously aggregate the chunks of the body
+    let mut body = hyper::body::aggregate(resp).await?;
+    let pair = serde_json::from_slice(body.to_bytes().bytes())?;
+    Ok(pair)
+}
+
+#[derive(Deserialize, Debug)]
+struct CurrencyPair {
+    usd: f64,
+    eth: f64,
 }
