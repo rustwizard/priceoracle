@@ -1,15 +1,20 @@
+#![allow(non_snake_case)]
+
 use serde::Deserialize;
 
 use clap::ArgMatches;
-use hyper::body::Buf;
 use hyper::Client;
+use hyper_tls::HttpsConnector;
+
+use bytes::buf::BufExt as _;
 
 #[tokio::main]
 pub async fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::new(arg);
     let url = make_url(config.api_endpoint.unwrap(), config.api_key.unwrap()).unwrap();
     info!(logger, "service called to the {}", url);
-    let pair = fetch_json(url.as_str().parse().unwrap()).await?;
+    let price = fetch_json(url.as_str().parse().unwrap()).await?;
+    info!(logger, "one BTC for ETH now is {:#?}", price);
     Ok(())
 }
 
@@ -31,26 +36,27 @@ impl Config {
 }
 
 fn make_url(api_endpoint: String, api_key: String) -> Option<String> {
-    let mut url = api_endpoint + "/data/price?fsym=BTC&tsyms=USD,ETH";
+    let mut url = api_endpoint + "/data/price?fsym=BTC&tsyms=ETH";
     url = url + "&api_key=" + api_key.as_ref();
     Some(url)
 }
 
-async fn fetch_json(url: hyper::Uri) -> Result<CurrencyPair, Box<dyn std::error::Error>> {
-    let client = Client::new();
+async fn fetch_json(url: hyper::Uri) -> Result<OneBtcToEth, Box<dyn std::error::Error>> {
+    let https = HttpsConnector::new();
+    let client = Client::builder().build::<_, hyper::Body>(https);
 
     // Fetch the url...
     let resp = client.get(url).await?;
     println!("Response: {}", resp.status());
 
     // asynchronously aggregate the chunks of the body
-    let mut body = hyper::body::aggregate(resp).await?;
-    let pair = serde_json::from_slice(body.to_bytes().bytes())?;
-    Ok(pair)
+    let body = hyper::body::aggregate(resp).await?;
+    let price = serde_json::from_reader(body.reader())?;
+
+    Ok(price)
 }
 
 #[derive(Deserialize, Debug)]
-struct CurrencyPair {
-    usd: f64,
-    eth: f64,
+struct OneBtcToEth {
+    ETH: f64,
 }
