@@ -34,10 +34,7 @@ impl Config {
     fn new(arg: &ArgMatches) -> Self {
         let api_endpoint = arg.value_of("api_endpoint").unwrap().to_string();
         let api_key = arg.value_of("api_key").unwrap().to_string();
-        let cpi = match arg.value_of("poll_interval") {
-            Some(cpi) => cpi,
-            None => "5",
-        };
+        let cpi = arg.value_of("poll_interval").unwrap();
 
         let poll_interval = cpi.parse::<u32>().unwrap();
 
