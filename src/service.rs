@@ -12,25 +12,39 @@ use bytes::buf::BufExt as _;
 pub async fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::new(arg);
     let url = make_url(config.api_endpoint.unwrap(), config.api_key.unwrap()).unwrap();
-    info!(logger, "service called to the {}", url);
+    info!(
+        logger,
+        "service called to the {} with poll interval {}",
+        url,
+        config.poll_interval.unwrap()
+    );
     let price = fetch_json(url.as_str().parse().unwrap()).await?;
     info!(logger, "one BTC for ETH now is {:#?}", price);
     Ok(())
 }
 
+#[derive(Default)]
 struct Config {
     api_endpoint: Option<String>,
     api_key: Option<String>,
+    poll_interval: Option<u32>,
 }
 
 impl Config {
     fn new(arg: &ArgMatches) -> Self {
         let api_endpoint = arg.value_of("api_endpoint").unwrap().to_string();
         let api_key = arg.value_of("api_key").unwrap().to_string();
+        let cpi = match arg.value_of("poll_interval") {
+            Some(cpi) => cpi,
+            None => "5",
+        };
+
+        let poll_interval = cpi.parse::<u32>().unwrap();
 
         Config {
             api_endpoint: Some(api_endpoint),
             api_key: Some(api_key),
+            poll_interval: Some(poll_interval),
         }
     }
 }
