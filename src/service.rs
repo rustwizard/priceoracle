@@ -5,6 +5,7 @@ use serde::Deserialize;
 use clap::ArgMatches;
 use hyper::Client;
 use hyper_tls::HttpsConnector;
+use std::{thread, time};
 
 use bytes::buf::BufExt as _;
 
@@ -12,25 +13,38 @@ use bytes::buf::BufExt as _;
 pub async fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::new(arg);
     let url = make_url(config.api_endpoint.unwrap(), config.api_key.unwrap()).unwrap();
-    info!(logger, "service called to the {}", url);
-    let price = fetch_json(url.as_str().parse().unwrap()).await?;
-    info!(logger, "one BTC for ETH now is {:#?}", price);
-    Ok(())
+    info!(
+        logger,
+        "service called to the {} with poll interval {}",
+        url,
+        config.poll_interval.unwrap()
+    );
+    loop {
+        let price = fetch_json(url.as_str().parse().unwrap()).await?;
+        info!(logger, "one BTC for ETH now is {:#?}", price);
+        thread::sleep(time::Duration::from_secs(config.poll_interval.unwrap()));
+    }
 }
 
+#[derive(Default)]
 struct Config {
     api_endpoint: Option<String>,
     api_key: Option<String>,
+    poll_interval: Option<u64>,
 }
 
 impl Config {
     fn new(arg: &ArgMatches) -> Self {
         let api_endpoint = arg.value_of("api_endpoint").unwrap().to_string();
         let api_key = arg.value_of("api_key").unwrap().to_string();
+        let cpi = arg.value_of("poll_interval").unwrap();
+
+        let poll_interval = cpi.parse::<u64>().unwrap();
 
         Config {
             api_endpoint: Some(api_endpoint),
             api_key: Some(api_key),
+            poll_interval: Some(poll_interval),
         }
     }
 }

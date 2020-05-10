@@ -113,6 +113,13 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .env("PO_SERVICE_API_KEY")
                         .long("api_key")
                         .help("api key from api endpoint"),
+                )
+                .arg(
+                    Arg::with_name("poll_interval")
+                        .env("PO_SERVICE_POLL_INTERVAL")
+                        .long("poll_interval")
+                        .default_value("5")
+                        .help("interval in second to sleep before polling external api endpoint"),
                 ),
         )
         .subcommand(
