@@ -20,7 +20,7 @@ pub async fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Box<dyn s
         config.poll_interval.unwrap()
     );
     loop {
-        let price = fetch_json(url.as_str().parse().unwrap()).await?;
+        let price = fetch_eth_price(url.as_str().parse().unwrap()).await?;
         info!(logger, "one BTC for ETH now is {:#?}", price);
         thread::sleep(time::Duration::from_secs(config.poll_interval.unwrap()));
     }
@@ -55,7 +55,7 @@ fn make_url(api_endpoint: String, api_key: String) -> Option<String> {
     Some(url)
 }
 
-async fn fetch_json(url: hyper::Uri) -> Result<OneBtcToEth, Box<dyn std::error::Error>> {
+async fn fetch_eth_price(url: hyper::Uri) -> Result<OneBtcToEth, Box<dyn std::error::Error>> {
     let https = HttpsConnector::new();
     let client = Client::builder().build::<_, hyper::Body>(https);
 
