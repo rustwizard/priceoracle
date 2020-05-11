@@ -208,7 +208,7 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                     Arg::with_name("from_addr")
                         .env("PO_ETHEREUM_FROM_ADDR")
                         .long("from_addr")
-                        .help("address will be used for contract deploy"),
+                        .help("owner of the contract address"),
                 )
                 .arg(
                     Arg::with_name("private_key")
@@ -220,7 +220,7 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                     Arg::with_name("chain_id")
                         .env("PO_ETHEREUM_CHAIN_ID")
                         .long("chain_id")
-                        .help("chain id for sign tx"),
+                        .help("chain id for tx signing"),
                 ),
         )
         .subcommand(
