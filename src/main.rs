@@ -129,14 +129,6 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .help("mainnet or testnet"),
                 )
                 .arg(
-                    Arg::with_name("newprice")
-                        .required(true)
-                        .takes_value(true)
-                        .short("np")
-                        .long("newprice")
-                        .help("set new price in uint256"),
-                )
-                .arg(
                     Arg::with_name("contractaddr")
                         .required(true)
                         .env("PO_CONTRACT_ADDRESS")
