@@ -1,5 +1,4 @@
-# All respects goes to the author of https://shaneutt.com/blog/rust-fast-small-docker-image-builds/
-FROM ethereum/solc:nightly-alpine as solidity-compiler
+FROM ethereum/solc:stable-alpine as solidity-compiler
 
 WORKDIR /root/
 
@@ -7,11 +6,9 @@ COPY ./src/contract/* ./
 
 RUN solc --overwrite --abi --bin priceoracle.sol -o .
 
-FROM rust:latest as cargo-build
+FROM rust:slim-stretch as cargo-build
 
-RUN apt-get update && \
-    apt-get install -y musl-tools && \
-    rustup target add x86_64-unknown-linux-musl
+RUN apt-get update && apt-get -y install libssl-dev pkg-config
 
 WORKDIR /usr/src/priceoracle
 
@@ -19,21 +16,15 @@ COPY . .
 
 COPY --from=solidity-compiler /root/PriceOracle.* ./src/contract/
 
-RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl
+RUN cargo build --release
 
-FROM alpine:latest
+FROM debian:stretch-slim
 
-RUN addgroup -g 1000 priceoracle
-
-RUN adduser -D -s /bin/sh -u 1000 -G priceoracle priceoracle
+RUN apt-get update && apt-get -y install libssl-dev openssl
 
 WORKDIR /home/priceoracle/bin/
 
-COPY --from=cargo-build /usr/src/priceoracle/target/x86_64-unknown-linux-musl/release/priceoracle .
-
-RUN chown priceoracle:priceoracle priceoracle
-
-USER priceoracle
+COPY --from=cargo-build /usr/src/priceoracle/target/release/priceoracle .
 
 EXPOSE 8080
 

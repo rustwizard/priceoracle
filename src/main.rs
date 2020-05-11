@@ -120,6 +120,45 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                         .long("poll_interval")
                         .default_value("5")
                         .help("interval in second to sleep before polling external api endpoint"),
+                )
+                .arg(
+                    Arg::with_name("net")
+                        .required(true)
+                        .env("PO_ETHEREUM_NETWORK")
+                        .long("net")
+                        .help("mainnet or testnet"),
+                )
+                .arg(
+                    Arg::with_name("contractaddr")
+                        .required(true)
+                        .env("PO_CONTRACT_ADDRESS")
+                        .short("ca")
+                        .long("contractaddr")
+                        .help("address of the contract in the Ethereum network"),
+                )
+                .arg(
+                    Arg::with_name("gas_limit")
+                        .env("PO_ETHEREUM_GAS_LIMIT")
+                        .long("gas_limit")
+                        .help("gas limit for tx"),
+                )
+                .arg(
+                    Arg::with_name("from_addr")
+                        .env("PO_ETHEREUM_FROM_ADDR")
+                        .long("from_addr")
+                        .help("owner of the contract address"),
+                )
+                .arg(
+                    Arg::with_name("private_key")
+                        .env("PO_ETHEREUM_PRIVATE_KEY")
+                        .long("private_key")
+                        .help("private key for tx signing"),
+                )
+                .arg(
+                    Arg::with_name("chain_id")
+                        .env("PO_ETHEREUM_CHAIN_ID")
+                        .long("chain_id")
+                        .help("chain id for tx signing"),
                 ),
         )
         .subcommand(
@@ -208,7 +247,7 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                     Arg::with_name("from_addr")
                         .env("PO_ETHEREUM_FROM_ADDR")
                         .long("from_addr")
-                        .help("address will be used for contract deploy"),
+                        .help("owner of the contract address"),
                 )
                 .arg(
                     Arg::with_name("private_key")
@@ -220,7 +259,7 @@ pub fn build_app_get_matches() -> ArgMatches<'static> {
                     Arg::with_name("chain_id")
                         .env("PO_ETHEREUM_CHAIN_ID")
                         .long("chain_id")
-                        .help("chain id for sign tx"),
+                        .help("chain id for tx signing"),
                 ),
         )
         .subcommand(

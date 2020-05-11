@@ -7,7 +7,7 @@ use std::net::ToSocketAddrs;
 async fn routes(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/") => Ok(Response::new(Body::from(
-            "Try POSTing data to / such as: `curl localhost:8000/ -XPOST -d 'hello'`",
+            "Try POSTing data to / such as: `curl localhost:8080/ -XPOST -d 'hello'`",
         ))),
         _ => {
             let mut not_found = Response::default();
