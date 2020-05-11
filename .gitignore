@@ -2,4 +2,5 @@
 src/contract/PriceOracle.*
 /target
 .env
+docker-compose.yaml
 **/*.rs.bk

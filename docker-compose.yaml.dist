@@ -1,0 +1,31 @@
+version: "3"
+services:
+  priceoracle:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      PO_SERVER_BIND: 0.0.0.0:8080
+      PO_ETHEREUM_NETWORK: eth_node:8545
+    command: ["server"]
+  priceoracle-service:
+    build: .
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      PO_SERVER_BIND: 0.0.0.0:8080
+      PO_ETHEREUM_NETWORK: eth_node:8545
+      PO_SERVICE_API_ENDPOINT: ""
+      PO_SERVICE_API_KEY: ""
+      PO_SERVICE_POLL_INTERVAL: 5
+      PO_CONTRACT_ADDRESS: ""
+      PO_ETHEREUM_GAS_LIMIT: 6721975
+      PO_ETHEREUM_FROM_ADDR: ""
+      PO_ETHEREUM_PRIVATE_KEY: ""
+      PO_ETHEREUM_CHAIN_ID: 3
+      PO_ETHEREUM_TRANSPORT: "http"
+    command: ["service"]
+  eth_node:
+    image: trufflesuite/ganache-cli
+    ports:
+      - "127.0.0.1:8545:8545"
