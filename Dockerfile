@@ -8,7 +8,7 @@ RUN solc --overwrite --abi --bin priceoracle.sol -o .
 
 FROM rust:slim-stretch as cargo-build
 
-RUN apt-get update && apt-get -y install libssl-dev pkg-config
+RUN apt-get update && apt-get -y install libssl-dev pkg-config ca-certificates
 
 WORKDIR /usr/src/priceoracle
 
@@ -20,7 +20,7 @@ RUN cargo build --release
 
 FROM debian:stretch-slim
 
-RUN apt-get update && apt-get -y install libssl-dev openssl
+RUN apt-get update && apt-get -y install libssl-dev openssl ca-certificates
 
 WORKDIR /home/priceoracle/bin/
 
