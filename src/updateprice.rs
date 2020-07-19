@@ -1,6 +1,7 @@
 use crate::web3util;
 use clap::ArgMatches;
 use core::fmt;
+use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::time::Duration;
 use std::vec::Vec;
@@ -166,15 +167,18 @@ fn with_own_eth_node(
     Ok(tx)
 }
 
-pub fn update(logger: slog::Logger, conf: UpdateConfig) -> Result<(), Box<dyn std::error::Error>> {
-    info!(logger, "config: {}", conf);
+pub fn update_price(
+    logger: &slog::Logger,
+    conf: UpdateConfig,
+) -> Result<(), Box<dyn std::error::Error>> {
+    info!(logger, "update_config: {}", conf);
     Ok(())
 }
 
 pub struct UpdateConfig {
     from_addr: Option<Address>,
     contract_addr: Option<Address>,
-    new_price: U256,
+    pub new_price: U256,
     pvt_key: H256,
     gas_limit: U256,
     contract_abi: Vec<u8>,
@@ -186,7 +190,7 @@ impl fmt::Display for UpdateConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "({}, {}, {})",
+            "(from_addr: {}, contract_addr: {}, new_price: {})",
             self.from_addr.unwrap(),
             self.contract_addr.unwrap(),
             self.new_price
@@ -195,7 +199,7 @@ impl fmt::Display for UpdateConfig {
 }
 
 impl UpdateConfig {
-    fn new(arg: &ArgMatches) -> Self {
+    pub(crate) fn new(arg: &ArgMatches) -> Self {
         let net = arg.value_of("net").unwrap().to_string();
 
         let my_account = arg.value_of("from_addr").unwrap();
@@ -204,7 +208,10 @@ impl UpdateConfig {
         let ca = arg.value_of("contractaddr").unwrap();
         let contract_address: Address = ca.parse().unwrap();
 
-        let np = arg.value_of("newprice").unwrap();
+        let np = match arg.value_of("newprice") {
+            Some(val) => val,
+            None => "10",
+        };
         let new_price = U256::from_dec_str(np).unwrap();
 
         let pk = arg.value_of("private_key").unwrap();
@@ -217,7 +224,10 @@ impl UpdateConfig {
         let cid = arg.value_of("chain_id").unwrap();
         let chain_id = cid.parse::<u8>().unwrap();
 
-        let cabi = Asset::get("PriceOracle.abi").unwrap();
+        let cabi = match Asset::get("PriceOracle.abi") {
+            Some(val) => val,
+            _ => Cow::Borrowed("moo".as_bytes()),
+        };
         let contract_abi = cabi.as_ref().to_vec();
 
         UpdateConfig {
