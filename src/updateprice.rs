@@ -36,7 +36,7 @@ pub fn run_with_ws(
     let web3 = web3::Web3::new(http);
 
     let tx = match config.from_addr {
-        None => with_own_eth_node(web3, config),
+        None => with_own_eth_node(web3, &config),
         Some(_) => with_existing_wallet(web3, config),
     };
 
@@ -67,7 +67,7 @@ pub fn run_with_http(
     let web3 = web3::Web3::new(http);
 
     let tx = match config.from_addr {
-        None => with_own_eth_node(web3, config),
+        None => with_own_eth_node(web3, &config),
         Some(_) => with_existing_wallet(web3, config),
     };
 
@@ -121,7 +121,7 @@ fn with_existing_wallet(
 
 fn with_own_eth_node(
     eth_client: web3::Web3<impl Transport>,
-    conf: UpdateConfig,
+    conf: &UpdateConfig,
 ) -> Result<H256, Box<dyn std::error::Error>> {
     let contract = Contract::from_json(
         eth_client.eth(),
@@ -172,6 +172,16 @@ pub fn update_price(
     conf: &UpdateConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!(logger, "update_config: {}", conf);
+
+    let (eloop, http) = web3::transports::Http::new(&conf.net).unwrap();
+    eloop.into_remote();
+
+    let web3 = web3::Web3::new(http);
+
+    let tx = with_own_eth_node(web3, conf);
+
+    info!(logger, "tx: {:?}", tx);
+
     Ok(())
 }
 
