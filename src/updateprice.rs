@@ -1,5 +1,6 @@
 use crate::web3util;
 use clap::ArgMatches;
+use core::fmt;
 use std::convert::TryFrom;
 use std::time::Duration;
 use std::vec::Vec;
@@ -165,7 +166,12 @@ fn with_own_eth_node(
     Ok(tx)
 }
 
-struct UpdateConfig {
+pub fn update(logger: slog::Logger, conf: UpdateConfig) -> Result<(), Box<dyn std::error::Error>> {
+    info!(logger, "config: {}", conf);
+    Ok(())
+}
+
+pub struct UpdateConfig {
     from_addr: Option<Address>,
     contract_addr: Option<Address>,
     new_price: U256,
@@ -174,6 +180,18 @@ struct UpdateConfig {
     contract_abi: Vec<u8>,
     chain_id: u8,
     net: String,
+}
+
+impl fmt::Display for UpdateConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "({}, {}, {})",
+            self.from_addr.unwrap(),
+            self.contract_addr.unwrap(),
+            self.new_price
+        )
+    }
 }
 
 impl UpdateConfig {
