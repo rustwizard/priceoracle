@@ -169,7 +169,7 @@ fn with_own_eth_node(
 
 pub fn update_price(
     logger: &slog::Logger,
-    conf: UpdateConfig,
+    conf: &UpdateConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!(logger, "update_config: {}", conf);
     Ok(())
