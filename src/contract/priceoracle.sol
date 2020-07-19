@@ -1,5 +1,7 @@
 pragma solidity ^0.6.0;
 
+
+//SPDX-License-Identifier: MIT License
 contract PriceOracle {
 
     mapping (address => bool) admins;

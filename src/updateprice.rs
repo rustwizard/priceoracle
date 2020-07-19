@@ -1,5 +1,7 @@
 use crate::web3util;
 use clap::ArgMatches;
+use core::fmt;
+use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::time::Duration;
 use std::vec::Vec;
@@ -34,7 +36,7 @@ pub fn run_with_ws(
     let web3 = web3::Web3::new(http);
 
     let tx = match config.from_addr {
-        None => with_own_eth_node(web3, config),
+        None => with_own_eth_node(web3, &config),
         Some(_) => with_existing_wallet(web3, config),
     };
 
@@ -65,7 +67,7 @@ pub fn run_with_http(
     let web3 = web3::Web3::new(http);
 
     let tx = match config.from_addr {
-        None => with_own_eth_node(web3, config),
+        None => with_own_eth_node(web3, &config),
         Some(_) => with_existing_wallet(web3, config),
     };
 
@@ -119,7 +121,7 @@ fn with_existing_wallet(
 
 fn with_own_eth_node(
     eth_client: web3::Web3<impl Transport>,
-    conf: UpdateConfig,
+    conf: &UpdateConfig,
 ) -> Result<H256, Box<dyn std::error::Error>> {
     let contract = Contract::from_json(
         eth_client.eth(),
@@ -165,10 +167,28 @@ fn with_own_eth_node(
     Ok(tx)
 }
 
-struct UpdateConfig {
+pub fn update_price(
+    logger: &slog::Logger,
+    conf: &UpdateConfig,
+) -> Result<(), Box<dyn std::error::Error>> {
+    info!(logger, "update_config: {}", conf);
+
+    let (eloop, http) = web3::transports::Http::new(&conf.net).unwrap();
+    eloop.into_remote();
+
+    let web3 = web3::Web3::new(http);
+
+    let tx = with_own_eth_node(web3, conf);
+
+    info!(logger, "tx: {:?}", tx);
+
+    Ok(())
+}
+
+pub struct UpdateConfig {
     from_addr: Option<Address>,
     contract_addr: Option<Address>,
-    new_price: U256,
+    pub new_price: U256,
     pvt_key: H256,
     gas_limit: U256,
     contract_abi: Vec<u8>,
@@ -176,8 +196,20 @@ struct UpdateConfig {
     net: String,
 }
 
+impl fmt::Display for UpdateConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "(from_addr: {}, contract_addr: {}, new_price: {})",
+            self.from_addr.unwrap(),
+            self.contract_addr.unwrap(),
+            self.new_price
+        )
+    }
+}
+
 impl UpdateConfig {
-    fn new(arg: &ArgMatches) -> Self {
+    pub(crate) fn new(arg: &ArgMatches) -> Self {
         let net = arg.value_of("net").unwrap().to_string();
 
         let my_account = arg.value_of("from_addr").unwrap();
@@ -186,7 +218,10 @@ impl UpdateConfig {
         let ca = arg.value_of("contractaddr").unwrap();
         let contract_address: Address = ca.parse().unwrap();
 
-        let np = arg.value_of("newprice").unwrap();
+        let np = match arg.value_of("newprice") {
+            Some(val) => val,
+            None => "10",
+        };
         let new_price = U256::from_dec_str(np).unwrap();
 
         let pk = arg.value_of("private_key").unwrap();
@@ -199,7 +234,10 @@ impl UpdateConfig {
         let cid = arg.value_of("chain_id").unwrap();
         let chain_id = cid.parse::<u8>().unwrap();
 
-        let cabi = Asset::get("PriceOracle.abi").unwrap();
+        let cabi = match Asset::get("PriceOracle.abi") {
+            Some(val) => val,
+            _ => Cow::Borrowed("moo".as_bytes()),
+        };
         let contract_abi = cabi.as_ref().to_vec();
 
         UpdateConfig {

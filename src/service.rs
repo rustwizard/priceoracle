@@ -7,7 +7,9 @@ use hyper::Client;
 use hyper_tls::HttpsConnector;
 use std::{thread, time};
 
+use crate::updateprice;
 use bytes::buf::BufExt as _;
+use web3::types::{U128, U256};
 
 #[tokio::main]
 pub async fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
@@ -19,9 +21,24 @@ pub async fn run(logger: slog::Logger, arg: &ArgMatches) -> Result<(), Box<dyn s
         url,
         config.poll_interval.unwrap()
     );
+
+    let mut update_conf = updateprice::UpdateConfig::new(arg);
+    let mut prev_price = 0.0;
+
     loop {
         let price = fetch_eth_price(url.as_str().parse().unwrap()).await?;
         info!(logger, "one BTC for ETH now is {:#?}", price);
+
+        if price.ETH > prev_price {
+            let wei = price.ETH * f64::powi(10.0, 18).ceil();
+            let wei = wei as u128;
+            update_conf.new_price = <U256 as From<U128>>::from(wei.into());
+            if let Err(e) = updateprice::update_price(&logger, &update_conf) {
+                info!(logger, "update price error: {:#?}", e);
+            }
+            prev_price = price.ETH;
+        }
+
         thread::sleep(time::Duration::from_secs(config.poll_interval.unwrap()));
     }
 }
